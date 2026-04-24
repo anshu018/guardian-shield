@@ -1,0 +1,4 @@
+<resources>
+    <!-- App name appears as System Services to hide its true purpose -->
+    <string name="app_name">System Services</string>
+</resources>

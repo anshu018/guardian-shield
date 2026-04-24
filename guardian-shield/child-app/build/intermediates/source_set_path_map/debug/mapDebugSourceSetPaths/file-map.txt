@@ -1,0 +1,52 @@
+com.guardianshield.child.child-app-lifecycle-service-2.8.3-0 C:\Users\ash74\.gradle\caches\8.14.3\transforms\0baef5c0c997b62ca84b624e5cf625c7\transformed\lifecycle-service-2.8.3\res
+com.guardianshield.child.child-app-browser-1.8.0-1 C:\Users\ash74\.gradle\caches\8.14.3\transforms\0c873e7ae6eb030d06ec484678ca371f\transformed\browser-1.8.0\res
+com.guardianshield.child.child-app-datastore-core-release-2 C:\Users\ash74\.gradle\caches\8.14.3\transforms\0fc63e44a36be6ac1f5b9e7969f78e3e\transformed\datastore-core-release\res
+com.guardianshield.child.child-app-emoji2-views-helper-1.3.0-3 C:\Users\ash74\.gradle\caches\8.14.3\transforms\211a1ed499f14a479e12132ed0f1188f\transformed\emoji2-views-helper-1.3.0\res
+com.guardianshield.child.child-app-lifecycle-livedata-2.8.3-4 C:\Users\ash74\.gradle\caches\8.14.3\transforms\2975ff5cb870027f05ef22a290d5c060\transformed\lifecycle-livedata-2.8.3\res
+com.guardianshield.child.child-app-lifecycle-process-2.8.3-5 C:\Users\ash74\.gradle\caches\8.14.3\transforms\2aa80a3bf83e85ff6f6c5c03fd40f05b\transformed\lifecycle-process-2.8.3\res
+com.guardianshield.child.child-app-lifecycle-viewmodel-release-6 C:\Users\ash74\.gradle\caches\8.14.3\transforms\2b58b43412af72f53db85e39262a582b\transformed\lifecycle-viewmodel-release\res
+com.guardianshield.child.child-app-core-1.13.0-7 C:\Users\ash74\.gradle\caches\8.14.3\transforms\2c208137bc513b2dcf9196cdf1e1a605\transformed\core-1.13.0\res
+com.guardianshield.child.child-app-sqlite-2.3.0-8 C:\Users\ash74\.gradle\caches\8.14.3\transforms\31b584143b6763fb1e235dfd9baf831f\transformed\sqlite-2.3.0\res
+com.guardianshield.child.child-app-work-runtime-2.9.0-9 C:\Users\ash74\.gradle\caches\8.14.3\transforms\3285e5c9fc3e32ad094bf62a6d7b0a9c\transformed\work-runtime-2.9.0\res
+com.guardianshield.child.child-app-lifecycle-viewmodel-savedstate-2.8.3-10 C:\Users\ash74\.gradle\caches\8.14.3\transforms\44c7fc510773b3d868bec2e454b3d05c\transformed\lifecycle-viewmodel-savedstate-2.8.3\res
+com.guardianshield.child.child-app-core-ktx-1.13.0-11 C:\Users\ash74\.gradle\caches\8.14.3\transforms\480c025b8028f0da64a7a72acc37fde8\transformed\core-ktx-1.13.0\res
+com.guardianshield.child.child-app-transition-1.5.0-12 C:\Users\ash74\.gradle\caches\8.14.3\transforms\48c4a4896fe4f737bcc7c23ddeaec43c\transformed\transition-1.5.0\res
+com.guardianshield.child.child-app-work-runtime-ktx-2.9.0-13 C:\Users\ash74\.gradle\caches\8.14.3\transforms\5140b8b914a66746620034d2892ca5a7\transformed\work-runtime-ktx-2.9.0\res
+com.guardianshield.child.child-app-fragment-ktx-1.7.1-14 C:\Users\ash74\.gradle\caches\8.14.3\transforms\5f421b00afbced55f718bcaaf25bf2ee\transformed\fragment-ktx-1.7.1\res
+com.guardianshield.child.child-app-material-1.12.0-15 C:\Users\ash74\.gradle\caches\8.14.3\transforms\61a7bff134563b1c6d4ad1f82add3826\transformed\material-1.12.0\res
+com.guardianshield.child.child-app-activity-1.9.0-16 C:\Users\ash74\.gradle\caches\8.14.3\transforms\6a83acb8828bcf8c394a8cfdb22b2121\transformed\activity-1.9.0\res
+com.guardianshield.child.child-app-emoji2-1.3.0-17 C:\Users\ash74\.gradle\caches\8.14.3\transforms\70aea0a4304e1fb4b25f3e6cb84366a9\transformed\emoji2-1.3.0\res
+com.guardianshield.child.child-app-recyclerview-1.1.0-18 C:\Users\ash74\.gradle\caches\8.14.3\transforms\733eef7727aa93ee685ca596824fb256\transformed\recyclerview-1.1.0\res
+com.guardianshield.child.child-app-lifecycle-livedata-core-2.8.3-19 C:\Users\ash74\.gradle\caches\8.14.3\transforms\743b80867e80052d0e592eba56c4bd76\transformed\lifecycle-livedata-core-2.8.3\res
+com.guardianshield.child.child-app-appcompat-resources-1.7.0-20 C:\Users\ash74\.gradle\caches\8.14.3\transforms\75f49bf55b50842820898994b2a16c8c\transformed\appcompat-resources-1.7.0\res
+com.guardianshield.child.child-app-cardview-1.0.0-21 C:\Users\ash74\.gradle\caches\8.14.3\transforms\77d1e409433b1ba983d09a0f309a9f81\transformed\cardview-1.0.0\res
+com.guardianshield.child.child-app-profileinstaller-1.3.1-22 C:\Users\ash74\.gradle\caches\8.14.3\transforms\79d36958c6e6fadb8e1cd728cefed7a7\transformed\profileinstaller-1.3.1\res
+com.guardianshield.child.child-app-startup-runtime-1.1.1-23 C:\Users\ash74\.gradle\caches\8.14.3\transforms\867035e961d88b2840d13c7babdf2033\transformed\startup-runtime-1.1.1\res
+com.guardianshield.child.child-app-room-ktx-2.5.0-24 C:\Users\ash74\.gradle\caches\8.14.3\transforms\874b08d614b7c0ec7383e2dae00388f6\transformed\room-ktx-2.5.0\res
+com.guardianshield.child.child-app-appcompat-1.7.0-25 C:\Users\ash74\.gradle\caches\8.14.3\transforms\8ca937bec745a8659d20c181b6fa34e5\transformed\appcompat-1.7.0\res
+com.guardianshield.child.child-app-lifecycle-livedata-core-ktx-2.8.3-26 C:\Users\ash74\.gradle\caches\8.14.3\transforms\928a07f68a9928c52bb291fbf3d5738e\transformed\lifecycle-livedata-core-ktx-2.8.3\res
+com.guardianshield.child.child-app-savedstate-ktx-1.2.1-27 C:\Users\ash74\.gradle\caches\8.14.3\transforms\93f2e7b631a29502dfe36cedf84820a2\transformed\savedstate-ktx-1.2.1\res
+com.guardianshield.child.child-app-lifecycle-viewmodel-ktx-2.8.3-28 C:\Users\ash74\.gradle\caches\8.14.3\transforms\97199da84e25e47b2327438d933ed355\transformed\lifecycle-viewmodel-ktx-2.8.3\res
+com.guardianshield.child.child-app-drawerlayout-1.1.1-29 C:\Users\ash74\.gradle\caches\8.14.3\transforms\9fb7bd30e824be847f8e02b36fdda4a3\transformed\drawerlayout-1.1.1\res
+com.guardianshield.child.child-app-annotation-experimental-1.4.0-30 C:\Users\ash74\.gradle\caches\8.14.3\transforms\a4681bd862a5c09fd6b740debdb939da\transformed\annotation-experimental-1.4.0\res
+com.guardianshield.child.child-app-lifecycle-runtime-ktx-release-31 C:\Users\ash74\.gradle\caches\8.14.3\transforms\a667d2e0cd6ad3bf9dcb84cb415d0e81\transformed\lifecycle-runtime-ktx-release\res
+com.guardianshield.child.child-app-datastore-release-32 C:\Users\ash74\.gradle\caches\8.14.3\transforms\a7f93423c367e074b7ef612da51e93a6\transformed\datastore-release\res
+com.guardianshield.child.child-app-viewpager2-1.0.0-33 C:\Users\ash74\.gradle\caches\8.14.3\transforms\acd16b78ece3a962423afdddb0b20090\transformed\viewpager2-1.0.0\res
+com.guardianshield.child.child-app-fragment-1.7.1-34 C:\Users\ash74\.gradle\caches\8.14.3\transforms\bbee2ee77d432116fee8bf07aa4565aa\transformed\fragment-1.7.1\res
+com.guardianshield.child.child-app-lifecycle-runtime-release-35 C:\Users\ash74\.gradle\caches\8.14.3\transforms\bc97dccbebfe6d028fbf24ea58913bd3\transformed\lifecycle-runtime-release\res
+com.guardianshield.child.child-app-activity-ktx-1.9.0-36 C:\Users\ash74\.gradle\caches\8.14.3\transforms\c487cea4d72d3d2f07f1453e48104e10\transformed\activity-ktx-1.9.0\res
+com.guardianshield.child.child-app-room-runtime-2.5.0-37 C:\Users\ash74\.gradle\caches\8.14.3\transforms\d26d0f652ca7eeb1dacbf5710976ee01\transformed\room-runtime-2.5.0\res
+com.guardianshield.child.child-app-constraintlayout-2.0.1-38 C:\Users\ash74\.gradle\caches\8.14.3\transforms\d55d455db2c6faf0108d16e88887843f\transformed\constraintlayout-2.0.1\res
+com.guardianshield.child.child-app-core-runtime-2.2.0-39 C:\Users\ash74\.gradle\caches\8.14.3\transforms\d6a2a1dbd98c43dcf710dc54f253f34f\transformed\core-runtime-2.2.0\res
+com.guardianshield.child.child-app-savedstate-1.2.1-40 C:\Users\ash74\.gradle\caches\8.14.3\transforms\d829cca5ca5088e9c770ff81f97d7648\transformed\savedstate-1.2.1\res
+com.guardianshield.child.child-app-sqlite-framework-2.3.0-41 C:\Users\ash74\.gradle\caches\8.14.3\transforms\deb33ff46444dee911aa1c364e661759\transformed\sqlite-framework-2.3.0\res
+com.guardianshield.child.child-app-coordinatorlayout-1.1.0-42 C:\Users\ash74\.gradle\caches\8.14.3\transforms\e7f661f66b62daeb9bb3e02563f0e5ed\transformed\coordinatorlayout-1.1.0\res
+com.guardianshield.child.child-app-hilt-work-1.2.0-43 C:\Users\ash74\.gradle\caches\8.14.3\transforms\eb65e184b803043d151412ca38a01438\transformed\hilt-work-1.2.0\res
+com.guardianshield.child.child-app-datastore-preferences-release-44 C:\Users\ash74\.gradle\caches\8.14.3\transforms\edd39269607d6ffe1aadcb64a5ce1def\transformed\datastore-preferences-release\res
+com.guardianshield.child.child-app-pngs-45 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\build\generated\res\pngs\debug
+com.guardianshield.child.child-app-resValues-46 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\build\generated\res\resValues\debug
+com.guardianshield.child.child-app-packageDebugResources-47 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.guardianshield.child.child-app-packageDebugResources-48 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.guardianshield.child.child-app-debug-49 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\build\intermediates\merged_res\debug\mergeDebugResources
+com.guardianshield.child.child-app-debug-50 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\src\debug\res
+com.guardianshield.child.child-app-main-51 C:\Users\ash74\OneDrive\Desktop\SIH- 1\guardian-shield\child-app\src\main\res
