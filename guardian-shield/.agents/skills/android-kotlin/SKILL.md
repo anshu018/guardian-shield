@@ -224,7 +224,7 @@ object AppModule {
         ) {
             install(Postgrest)
             install(Realtime)
-            install(GoTrue)
+            install(Auth)
         }
     }
 }

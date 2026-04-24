@@ -17,19 +17,21 @@ both child-app and parent-app.
 ```kotlin
 // In libs.versions.toml
 [versions]
-supabase = "2.1.0"
-ktor = "2.3.7"
+supabase = "3.4.1"
 
 [libraries]
-supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
-supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt", version.ref = "supabase" }
-supabase-gotrue = { module = "io.github.jan-tennert.supabase:gotrue-kt", version.ref = "supabase" }
-ktor-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+supabase-bom        = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
+supabase-postgrest  = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
+supabase-realtime   = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+supabase-auth       = { module = "io.github.jan-tennert.supabase:auth-kt" }
+ktor-android        = { module = "io.ktor:ktor-client-android" }
 
 // In build.gradle.kts (app level)
+// Use BOM so all supabase modules stay version-consistent automatically
+implementation(platform(libs.supabase.bom))
 implementation(libs.supabase.postgrest)
 implementation(libs.supabase.realtime)
-implementation(libs.supabase.gotrue)
+implementation(libs.supabase.auth)
 implementation(libs.ktor.android)
 ```
 
@@ -50,8 +52,8 @@ fun provideSupabaseClient(): SupabaseClient {
     ) {
         install(Postgrest)
         install(Realtime)
-        install(GoTrue) {
-            scheme = "guardianshield"   // for OTP deep link callback
+        install(Auth) {
+            scheme = "guardianshield"
             host = "auth"
         }
     }
@@ -79,25 +81,25 @@ SUPABASE_ANON_KEY=your-anon-key-here
 ## OTP Phone Auth Flow
 
 ```kotlin
-// Step 1 — Send OTP (child-app and parent-app both use this)
+// Step 1 — Send OTP (v3 API)
+// phone format must be E.164: +91XXXXXXXXXX
 suspend fun sendOtp(phone: String): Result<Unit> {
     return try {
-        supabaseClient.gotrue.sendOtp(
-            type = OtpType.Phone(phone) // phone format: +91XXXXXXXXXX
-        )
+        supabaseClient.auth.signInWith(OTP) {
+            this.phone = phone
+        }
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)
     }
 }
 
-// Step 2 — Verify OTP
+// Step 2 — Verify OTP (v3 API)
 suspend fun verifyOtp(phone: String, token: String): Result<Unit> {
     return try {
-        supabaseClient.gotrue.verifyPhoneOtp(
+        supabaseClient.auth.verifyPhoneOtp(
             phone = phone,
-            token = token,
-            type = OtpType.SMS
+            token = token
         )
         Result.success(Unit)
     } catch (e: Exception) {
@@ -105,14 +107,14 @@ suspend fun verifyOtp(phone: String, token: String): Result<Unit> {
     }
 }
 
-// Step 3 — Get current session
+// Step 3 — Get current user ID
 fun getCurrentUserId(): String? {
-    return supabaseClient.gotrue.currentSessionOrNull()?.user?.id
+    return supabaseClient.auth.currentSessionOrNull()?.user?.id
 }
 
 // Step 4 — Check if logged in on app start
 fun isLoggedIn(): Boolean {
-    return supabaseClient.gotrue.currentSessionOrNull() != null
+    return supabaseClient.auth.currentSessionOrNull() != null
 }
 ```
 
