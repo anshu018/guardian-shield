@@ -1,0 +1,18 @@
+# Build outputs — never commit these
+build/
+.gradle/
+*.apk
+*.aab
+*.class
+*.dex
+
+# Local config — contains secret keys, never commit
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+.DS_Store
+
+# Keep the gradle wrapper jar
+!gradle/wrapper/gradle-wrapper.jar
