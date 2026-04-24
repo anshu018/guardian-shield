@@ -1,22 +1,22 @@
 [versions]
-agp = "8.3.2"
-kotlin = "1.9.23"
-ksp = "1.9.23-1.0.20"
-hilt = "2.51.1"
-supabase = "2.5.4"
-ktor = "2.3.12"
-coroutines = "1.8.1"
-lifecycle = "2.8.2"
-navigation = "2.7.7"
-datastore = "1.1.1"
-workmanager = "2.9.0"
-osmdroid = "6.1.18"
-webrtc = "114.5735.02"
-activity = "1.9.0"
-fragment = "1.7.1"
-appcompat = "1.7.0"
-material = "1.12.0"
-coil = "2.6.0"
+agp              = "8.9.1"
+kotlin           = "2.1.20"
+ksp              = "2.1.20-1.0.32"
+hilt             = "2.57.2"
+supabase         = "3.4.1"
+ktor             = "3.1.0"
+coroutines       = "1.9.0"
+lifecycle        = "2.8.7"
+navigation       = "2.8.5"
+datastore        = "1.1.1"
+workmanager      = "2.10.0"
+osmdroid         = "6.1.20"
+webrtc           = "1.1.1"
+activity         = "1.9.0"
+fragment         = "1.7.1"
+appcompat        = "1.7.0"
+material         = "1.12.0"
+coil             = "2.7.0"
 
 [libraries]
 # AndroidX
@@ -28,7 +28,7 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 # Lifecycle
 lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
+
 
 # Navigation
 navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
@@ -53,7 +53,7 @@ hilt-work-compiler = { module = "androidx.hilt:hilt-compiler", version = "1.2.0"
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
-supabase-auth = { module = "io.github.jan-tennert.supabase:gotrue-kt" }
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
 ktor-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 
@@ -61,7 +61,7 @@ ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 
 # WebRTC
-webrtc = { module = "io.getstream:stream-webrtc-android", version = "1.1.1" }
+webrtc = { module = "io.getstream:stream-webrtc-android", version.ref = "webrtc" }
 
 # Coil (parent-app image loading)
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
