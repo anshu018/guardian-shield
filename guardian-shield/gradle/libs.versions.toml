@@ -1,4 +1,4 @@
-[versions]
+﻿[versions]
 agp              = "8.7.3"
 kotlin           = "2.1.0"
 ksp              = "2.1.0-1.0.29"
@@ -19,54 +19,30 @@ material         = "1.12.0"
 coil             = "2.7.0"
 
 [libraries]
-# AndroidX
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-activity = { module = "androidx.activity:activity-ktx", version.ref = "activity" }
 androidx-fragment = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
-
-# Lifecycle
 lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
-
-
-# Navigation
 navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
 navigation-ui = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation" }
-
-# DataStore
 datastore = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
-
-# WorkManager
 workmanager = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
-
-# Coroutines
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-
-# Hilt
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
 hilt-work = { module = "androidx.hilt:hilt-work", version = "1.2.0" }
 hilt-work-compiler = { module = "androidx.hilt:hilt-compiler", version = "1.2.0" }
-
-# Supabase
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt" }
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
 ktor-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-
-# OSMDroid (parent-app only)
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
-
-# WebRTC
 webrtc = { module = "io.getstream:stream-webrtc-android", version.ref = "webrtc" }
-
-# Coil (parent-app image loading)
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
-
-# Serialization
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.6.3" }
 
 [plugins]
