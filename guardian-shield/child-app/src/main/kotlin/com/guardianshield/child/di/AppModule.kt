@@ -1,4 +1,4 @@
-package com.guardianshield.child.di
+﻿package com.guardianshield.child.di
 
 import android.content.Context
 import com.guardianshield.child.BuildConfig
@@ -12,10 +12,12 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.realtime
 import javax.inject.Singleton
 
 @Module
@@ -29,14 +31,26 @@ object AppModule {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY
         ) {
-            install(Postgrest)
-            install(Realtime)
             install(Auth) {
                 scheme = "guardianshield"
-                host = "auth"
+                host = "child"
+                // Auto-saves session to DataStore â€” child services need this
+                // to authenticate Supabase calls without re-login
             }
+            install(Postgrest)
+            install(Realtime)
         }
     }
+
+    @Provides
+    @Singleton
+    fun providePostgrest(client: SupabaseClient): Postgrest =
+        client.postgrest
+
+    @Provides
+    @Singleton
+    fun provideRealtime(client: SupabaseClient): Realtime =
+        client.realtime
 
     @Provides
     @Singleton

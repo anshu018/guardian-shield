@@ -8,6 +8,14 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Force androidx.browser to a version compatible with AGP 8.7.3
+// supabase-auth pulls in browser:1.9.0 which requires AGP 8.9.1
+configurations.all {
+    resolutionStrategy {
+        force("androidx.browser:browser:1.8.0")
+    }
+}
+
 val localProps = Properties().also { props ->
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { props.load(it) }
