@@ -56,20 +56,15 @@ Requested in this exact order during the setup wizard:
    → Blocks uninstall and enables remote phone lock
    → Guide parent: Settings → Device Admin → Guardian Shield → Activate
 
-4. MEDIA_PROJECTION
-   → Screen capture for live streaming to parent
-   → Triggered via startActivityForResult in setup wizard step 4
-   → Result data must be stored in DataStore for service restarts
-
-5. PACKAGE_USAGE_STATS
+4. PACKAGE_USAGE_STATS
    → UsageStatsManager access for AppMonitorService
    → Guide parent: Settings → Apps → Special App Access → Usage Access
 
-6. BIND_NOTIFICATION_LISTENER_SERVICE
+5. BIND_NOTIFICATION_LISTENER_SERVICE
    → Future notification reading feature — set up now, use later
    → Guide parent: Settings → Notification Access → Guardian Shield
 
-7. READ_CALL_LOG + READ_SMS + READ_CONTACTS
+6. READ_CALL_LOG + READ_SMS + READ_CONTACTS
    → Monitoring tab data for parent app
    → Request at runtime with clear explanation shown to parent
 
@@ -78,7 +73,6 @@ Manifest-only permissions (no runtime dialog needed):
 - RECEIVE_BOOT_COMPLETED
 - FOREGROUND_SERVICE
 - FOREGROUND_SERVICE_LOCATION
-- FOREGROUND_SERVICE_MEDIA_PROJECTION
 - SEND_SMS (SOS fallback only)
 - ACCESS_NETWORK_STATE (adaptive streaming quality detection)
 - INTERNET
@@ -130,14 +124,18 @@ from foreground-services/SKILL.md — no exceptions.
 - On MESSAGE command: show overlay dialog with parent's message text via WindowManager
 - After executing any command: update remote_commands row → executed = true
 
-### ScreenCaptureService (on-demand only)
+### SCREEN CAPTURE — AccessibilityService.takeScreenshot()
 
-- Does NOT run at all times — starts only when parent opens live screen tab
-- Uses MediaProjection + WebRTC as documented in webrtc-android/SKILL.md
-- Connects to Railway signaling server with role = "child"
-- Adaptive resolution and bitrate based on current network type
-- Auto-reconnects within 3 seconds if WebRTC connection drops
-- Must also implement 3-layer survival — screen stream must survive OEM kills
+- API: AccessibilityService.takeScreenshot() — Android 11 (API 30) and above
+- Permission: Uses the Accessibility Service permission already granted in setup Step 2
+- No MediaProjection. No token. No permission dialog. Ever.
+- Captures frames in a loop from within GuardianAccessibilityService
+- Frames encoded as JPEG and pushed into WebRTC custom VideoSource
+- Stream sent to parent app via Railway.app signaling + WebRTC P2P
+- Starts only when parent opens Live Screen tab (signal received via Supabase Realtime)
+- Stops when parent closes Live Screen tab
+- Survives phone restarts with zero re-configuration needed
+- Adaptive frame rate and JPEG quality based on network type
 
 ### Service startup sources:
 
@@ -206,7 +204,7 @@ If deactivation is attempted without the correct PIN → lockNow() immediately.
 - Stationary threshold: < 20m movement over 3 readings
 - Switch to BALANCED accuracy when battery drops below 15%
 - AppMonitor polling: every 30s only, never faster
-- ScreenCapture: adaptive bitrate per webrtc-android/SKILL.md
+- ScreenCapture: adaptive frame rate and quality per webrtc-android/SKILL.md
 - Target APK size: under 8MB — enforce R8 and ProGuard aggressively
 - Never hold a WAKE_LOCK manually — FusedLocationProvider handles its own wakeup
 
@@ -220,10 +218,9 @@ Completion state stored in DataStore: setupCompleted = true
 Step 1: Fine + Background location permission
 Step 2: Accessibility Service (open Settings, wait for user to enable)
 Step 3: Device Administrator (open Settings, wait for activation)
-Step 4: MediaProjection permission (startActivityForResult, store result in DataStore)
-Step 5: Usage Stats access (open Settings, wait for user to grant)
-Step 6: Notification Listener (open Settings, wait for user to enable)
-Step 7: Complete
+Step 4: Usage Stats access (open Settings, wait for user to grant)
+Step 5: Notification Listener (open Settings, wait for user to enable)
+Step 6: Complete
 → Start LocationTrackingService, AppMonitorService, EmergencySOSService
 → Schedule ServiceWatchdogWorker
 → Hide launcher icon via setComponentEnabledSetting DISABLED

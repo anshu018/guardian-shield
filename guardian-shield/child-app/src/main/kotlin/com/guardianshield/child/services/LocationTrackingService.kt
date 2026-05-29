@@ -1,29 +1,153 @@
 package com.guardianshield.child.services
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.BatteryManager
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
+import com.guardianshield.child.data.local.LocationDataStore
+import com.guardianshield.child.domain.models.ChildLocation
+import com.guardianshield.child.domain.repository.LocationRepository
 import com.guardianshield.child.utils.Constants
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class LocationTrackingService : Service() {
+class LocationTrackingService : Service(), LocationListener {
+
+    @Inject lateinit var locationRepository: LocationRepository
+    @Inject lateinit var locationDataStore: LocationDataStore
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private lateinit var locationManager: LocationManager
+
+    private var currentInterval = Constants.LOCATION_INTERVAL_NORMAL
+    private var lastLocationsList = mutableListOf<Location>()
+    private var isStationaryMode = false
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+            val pct = if (level >= 0 && scale > 0) (level * 100) / scale else 100
+            evaluateIntervalAdjustment(pct)
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(Constants.NOTIFICATION_ID, buildNotification())
-        // TODO: Start FusedLocationProvider polling — implemented in L6
+        startLocationUpdates()
         return START_STICKY
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startLocationUpdates() {
+        try {
+            locationManager.removeUpdates(this)
+
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    currentInterval,
+                    0f,
+                    this
+                )
+            }
+            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    currentInterval,
+                    0f,
+                    this
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onLocationChanged(location: Location) {
+        serviceScope.launch {
+            val childId = locationDataStore.getLastKnownLocation()?.childId ?: "device_child_1"
+            val batteryPct = getBatteryPercentage()
+
+            val childLocation = ChildLocation(
+                childId = childId,
+                lat = location.latitude,
+                lng = location.longitude,
+                battery = batteryPct,
+                accuracy = location.accuracy,
+                timestamp = location.time
+            )
+
+            detectStationaryState(location)
+            locationRepository.uploadLocation(childLocation)
+        }
+    }
+
+    private fun detectStationaryState(newLocation: Location) {
+        lastLocationsList.add(newLocation)
+        if (lastLocationsList.size > 3) {
+            lastLocationsList.removeAt(0)
+        }
+
+        if (lastLocationsList.size == 3) {
+            val loc1 = lastLocationsList[0]
+            val loc2 = lastLocationsList[1]
+            val loc3 = lastLocationsList[2]
+
+            val dist1 = loc1.distanceTo(loc2)
+            val dist2 = loc2.distanceTo(loc3)
+            val dist3 = loc1.distanceTo(loc3)
+
+            val isStationary = dist1 <= 20f && dist2 <= 20f && dist3 <= 20f
+            if (isStationary && !isStationaryMode) {
+                isStationaryMode = true
+                currentInterval = Constants.LOCATION_INTERVAL_STATIONARY
+                startLocationUpdates()
+            } else if (!isStationary && isStationaryMode) {
+                isStationaryMode = false
+                currentInterval = Constants.LOCATION_INTERVAL_NORMAL
+                startLocationUpdates()
+            }
+        }
+    }
+
+    private fun evaluateIntervalAdjustment(batteryPct: Int) {
+        if (batteryPct <= 15) {
+            if (currentInterval != 45_000L) {
+                currentInterval = 45_000L
+                startLocationUpdates()
+            }
+        }
+    }
+
+    private fun getBatteryPercentage(): Int {
+        val batteryStatus: Intent? = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        return if (level >= 0 && scale > 0) (level * 100) / scale else 100
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -32,6 +156,12 @@ class LocationTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        try {
+            unregisterReceiver(batteryReceiver)
+            locationManager.removeUpdates(this)
+        } catch (e: Exception) {
+            // Ignore
+        }
         serviceScope.cancel()
         scheduleRestart()
         super.onDestroy()
@@ -49,7 +179,7 @@ class LocationTrackingService : Service() {
 
     private fun buildNotification() = NotificationCompat.Builder(this, Constants.CHANNEL_ID)
         .setContentTitle("System Service")
-        .setContentText("Running")
+        .setContentText("Running core system processes")
         .setSmallIcon(android.R.drawable.ic_menu_manage)
         .setPriority(NotificationCompat.PRIORITY_MIN)
         .setSilent(true)

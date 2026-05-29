@@ -5,22 +5,22 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ChildLocationDto(
-    val id: String? = null,
+    val id: Long? = null,
     @SerialName("child_id") val childId: String,
-    val lat: Double,
-    val lng: Double,
-    val battery: Int,
-    val accuracy: Float,
-    val timestamp: String? = null
+    @SerialName("latitude") val lat: Double,
+    @SerialName("longitude") val lng: Double,
+    @SerialName("battery_percentage") val battery: Int,
+    @SerialName("accuracy_radius") val accuracy: Float,
+    @SerialName("created_at") val timestamp: String? = null
 )
 
 @Serializable
 data class SosEventDto(
     val id: String? = null,
     @SerialName("child_id") val childId: String,
-    val lat: Double,
-    val lng: Double,
-    val active: Boolean = true,
+    @SerialName("latitude") val lat: Double,
+    @SerialName("longitude") val lng: Double,
+    @SerialName("is_active") val active: Boolean = true,
     @SerialName("triggered_at") val triggeredAt: String? = null
 )
 
@@ -28,10 +28,11 @@ data class SosEventDto(
 data class RemoteCommandDto(
     val id: String? = null,
     @SerialName("child_id") val childId: String,
-    val command: String,
+    @SerialName("command_type") val command: String,
     val payload: String? = null,
-    val executed: Boolean = false,
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("is_executed") val executed: Boolean = false,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("executed_at") val executedAt: String? = null
 )
 
 @Serializable

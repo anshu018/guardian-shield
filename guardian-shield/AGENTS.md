@@ -24,7 +24,7 @@
 - Backend: Supabase (Postgres + Realtime + Auth + Storage)
 - Maps: OSMDroid — never Google Maps, never Mapbox
 - Auth: Supabase OTP phone auth — never email, never Google Sign-In
-- Streaming: WebRTC P2P via MediaProjection
+- Streaming: WebRTC P2P via AccessibilityService.takeScreenshot() (requires no additional permission beyond the Accessibility Service already granted)
 - Signaling: Railway.app Node.js + socket.io
 - Push/Alerts: Supabase Realtime — never FCM, never OneSignal
 - SMS fallback: Android SmsManager — for zero-internet SOS only

