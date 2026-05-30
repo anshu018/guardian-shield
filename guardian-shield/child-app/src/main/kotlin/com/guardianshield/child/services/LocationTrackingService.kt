@@ -39,13 +39,11 @@ class LocationTrackingService : Service(), LocationListener {
     private var currentInterval = Constants.LOCATION_INTERVAL_NORMAL
     private var lastLocationsList = mutableListOf<Location>()
     private var isStationaryMode = false
+    private var isSosActive = false
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            val pct = if (level >= 0 && scale > 0) (level * 100) / scale else 100
-            evaluateIntervalAdjustment(pct)
+            updateTrackingParameters()
         }
     }
 
@@ -57,7 +55,12 @@ class LocationTrackingService : Service(), LocationListener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(Constants.NOTIFICATION_ID, buildNotification())
-        startLocationUpdates()
+        intent?.let {
+            if (it.hasExtra("EXTRA_SOS_ACTIVE")) {
+                isSosActive = it.getBooleanExtra("EXTRA_SOS_ACTIVE", false)
+            }
+        }
+        updateTrackingParameters()
         return START_STICKY
     }
 
@@ -66,7 +69,10 @@ class LocationTrackingService : Service(), LocationListener {
         try {
             locationManager.removeUpdates(this)
 
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            val batteryPct = getBatteryPercentage()
+            val useBalancedAccuracyOnly = batteryPct <= 15 && !isSosActive
+
+            if (!useBalancedAccuracyOnly && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     currentInterval,
@@ -121,25 +127,39 @@ class LocationTrackingService : Service(), LocationListener {
             val dist2 = loc2.distanceTo(loc3)
             val dist3 = loc1.distanceTo(loc3)
 
-            val isStationary = dist1 <= 20f && dist2 <= 20f && dist3 <= 20f
+            val isStationary = dist1 <= Constants.STATIONARY_THRESHOLD_METERS &&
+                    dist2 <= Constants.STATIONARY_THRESHOLD_METERS &&
+                    dist3 <= Constants.STATIONARY_THRESHOLD_METERS
             if (isStationary && !isStationaryMode) {
                 isStationaryMode = true
-                currentInterval = Constants.LOCATION_INTERVAL_STATIONARY
-                startLocationUpdates()
+                serviceScope.launch {
+                    if (locationDataStore.getStationaryStartTime() == 0L) {
+                        locationDataStore.saveStationaryStartTime(System.currentTimeMillis())
+                    }
+                }
+                updateTrackingParameters()
             } else if (!isStationary && isStationaryMode) {
                 isStationaryMode = false
-                currentInterval = Constants.LOCATION_INTERVAL_NORMAL
-                startLocationUpdates()
+                serviceScope.launch {
+                    locationDataStore.saveStationaryStartTime(0L)
+                }
+                updateTrackingParameters()
             }
         }
     }
 
-    private fun evaluateIntervalAdjustment(batteryPct: Int) {
-        if (batteryPct <= 15) {
-            if (currentInterval != 45_000L) {
-                currentInterval = 45_000L
-                startLocationUpdates()
-            }
+    private fun updateTrackingParameters() {
+        val batteryPct = getBatteryPercentage()
+        val desiredInterval = when {
+            isSosActive -> Constants.LOCATION_INTERVAL_SOS
+            batteryPct <= 15 -> 45_000L
+            isStationaryMode -> Constants.LOCATION_INTERVAL_STATIONARY
+            else -> Constants.LOCATION_INTERVAL_NORMAL
+        }
+
+        if (currentInterval != desiredInterval) {
+            currentInterval = desiredInterval
+            startLocationUpdates()
         }
     }
 

@@ -17,6 +17,7 @@ fragment         = "1.7.1"
 appcompat        = "1.7.0"
 material         = "1.12.0"
 coil             = "2.7.0"
+socketio         = "2.1.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -43,6 +44,7 @@ ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 osmdroid = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 webrtc = { module = "io.getstream:stream-webrtc-android", version.ref = "webrtc" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+socket-io = { module = "io.socket:socket.io-client", version.ref = "socketio" }
 kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.6.3" }
 
 [plugins]

@@ -35,6 +35,10 @@ class LocationDataStore @Inject constructor(
         val FAMILY_ID = stringPreferencesKey("family_id")
         val PARENT_PIN = stringPreferencesKey("parent_pin")
         val OFFLINE_CACHE = stringPreferencesKey("offline_cache")
+        val BLOCKED_PACKAGES = stringPreferencesKey("blocked_packages")
+        val PARENT_PHONE = stringPreferencesKey("parent_phone")
+        val CHILD_NAME = stringPreferencesKey("child_name")
+        val STATIONARY_START_TIME = longPreferencesKey("stationary_start_time")
     }
 
     suspend fun saveLastKnownLocation(location: ChildLocation) {
@@ -117,5 +121,45 @@ class LocationDataStore @Inject constructor(
 
     suspend fun getParentPin(): String? {
         return context.dataStore.data.map { it[PARENT_PIN] }.first()
+    }
+
+    suspend fun saveBlockedPackages(packages: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[BLOCKED_PACKAGES] = Json.encodeToString(packages)
+        }
+    }
+
+    suspend fun getBlockedPackages(): List<String> {
+        val prefs = context.dataStore.data.first()
+        val json = prefs[BLOCKED_PACKAGES] ?: "[]"
+        return try {
+            Json.decodeFromString(json)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveParentPhone(phone: String) {
+        context.dataStore.edit { it[PARENT_PHONE] = phone }
+    }
+
+    suspend fun getParentPhone(): String? {
+        return context.dataStore.data.map { it[PARENT_PHONE] }.first()
+    }
+
+    suspend fun saveChildName(name: String) {
+        context.dataStore.edit { it[CHILD_NAME] = name }
+    }
+
+    suspend fun getChildName(): String? {
+        return context.dataStore.data.map { it[CHILD_NAME] }.first()
+    }
+
+    suspend fun saveStationaryStartTime(time: Long) {
+        context.dataStore.edit { it[STATIONARY_START_TIME] = time }
+    }
+
+    suspend fun getStationaryStartTime(): Long {
+        return context.dataStore.data.map { it[STATIONARY_START_TIME] }.first() ?: 0L
     }
 }

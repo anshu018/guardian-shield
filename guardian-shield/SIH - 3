@@ -1,0 +1,50 @@
+<!-- This is just the walkthrough of layer 6 implementation. Please don't read this for work -->
+
+Walkthrough — Layer 6: App Monitor Service Implementation
+We have successfully designed, implemented, and verified the Layer 6: App Monitor Service in the com.guardianshield.child module.
+
+🛠️ Changes Implemented
+We created/modified the following key components to implement stealth background package tracking and locking:
+
+1. Local Cache (LocationDataStore.kt)
+   Added BLOCKED_PACKAGES preferences key.
+   Implemented saveBlockedPackages(packages: List<String>) and getBlockedPackages(): List<String> using kotlinx.serialization JSON string serialization. This guarantees extremely fast, thread-safe, non-blocking check retrievals during background loops.
+2. Architecture Abstractions (domain/ and data/ layers)
+   New
+   AppUsageRepository.kt
+   : Defines the core application monitoring and blocked caching contracts.
+   New
+   AppUsageRepositoryImpl.kt
+   : Handles postgrest inserts for logging app_usage to Supabase, and updates local DataStore blocked caches.
+   Hilt module updates
+   AppModule.kt
+   : Configured abstract binder to inject AppUsageRepository smoothly across child-app modules.
+3. Programmatic Full-Screen Overlay UI
+   New
+   BlockActivity.kt
+   : A premium programmatic fullscreen warning overlay. It implements:
+   Harmonious HSL-derived deep charcoal gradient background (#141419 to #08080A).
+   An interactive pulsing lock icon utilizing ObjectAnimator scaling animations repeating infinitely.
+   Large Outfitted bold typography and alert pill text labels.
+   Overridden OnBackPressedCallback to stay permanently locked and bypass back-presses.
+   Disabling external system dialogs (like status bar pull-downs) by overriding onWindowFocusChanged and broadcasting ACTION_CLOSE_SYSTEM_DIALOGS.
+4. Background service loop
+   Updated
+   AppMonitorService.kt
+   :
+   Injected dependency repositories.
+   Implemented periodic 30-second UsageStatsManager polling utilizing a hybrid events-query and daily-interval fallback approach to ensure robust detection.
+   Automatically identifies system launchers and home overlays programmatically, filtering them out to prevent redundant log uploads.
+   Integrates direct Supabase Realtime channel subscription to the remote_commands table, parsing package lists on BLOCK_APP commands, updating local DataStore, and patching row state back (executed = true).
+   Automatically launches the fullscreen BlockActivity with FLAG_ACTIVITY_NEW_TASK and FLAG_ACTIVITY_CLEAR_TASK flags whenever active foreground package matches the blocked cache.
+5. Manifest Registration
+   Updated
+   AndroidManifest.xml
+   : Registered BlockActivity with the excludeFromRecents="true", noHistory="true", and launchMode="singleTask" parameters to preserve total background invisibility.
+   🧪 Verification & Compile Results
+   We ran the Gradle debug compilation target, which completed with absolute success:
+
+powershell
+
+./gradlew :child-app:assembleDebug
+Result: BUILD SUCCESSFUL in 17 seconds (all 43 actionable tasks resolved successfully with zero compilation or binding errors).

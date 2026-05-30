@@ -1,3 +1,127 @@
+# Layer 9: ScreenCaptureService (REVISED) Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Establish a stealthy, low-overhead, reboot-resilient real-time screen monitoring stream from the child's device using `AccessibilityService.takeScreenshot()` and a custom WebRTC video capture pipeline.
+
+**Architecture:** Create `GuardianAccessibilityService` to capture screen frames silently (replaces flaky `MediaProjection` token). Integrate the frames into a custom WebRTC `VideoCapturer` loop within `ScreenCaptureService` that adaptively tunes frame rate and JPEG quality based on battery and network state. Perform bitmap downscaling in memory to prevent crashes on budget Indian smartphones.
+
+**Tech Stack:** WebRTC (`io.getstream:stream-webrtc-android`), Socket.IO signaling, Android Accessibility API (API 30+), Kotlin Coroutines + Flow.
+
+---
+
+## User Review Required
+
+Documenting critical engineering adjustments for maximum transparency:
+
+> [!IMPORTANT]
+> **API Level Restriction**: `AccessibilityService.takeScreenshot()` is only available on Android 11 (API 30) and above. On legacy Android versions (API 26-29), the capture service will gracefully log an unsupported warning and stand by without crashing.
+
+> [!TIP]
+> **Extreme Memory Guarding**: To prevent Out Of Memory (OOM) errors on cheap ₹8,000 Indian devices, we scale down the screenshot bitmaps to a target width of `360px` (preserving aspect ratio) before YUV conversion. This reduces processed pixels by ~9x and memory footprint by ~90%. All temporary bitmaps are strictly recycled immediately inside the loop.
+
+---
+
+## Open Questions
+
+None at this stage. The requirements are fully aligned with the `AGENTS.md` stealth guidelines and system architecture constraints.
+
+---
+
+## Proposed Changes
+
+### Component 1: Accessibility Configuration
+
+#### [NEW] [accessibility_service_config.xml](file:///c:/Users/ash74/OneDrive/Desktop/SIH-%201/guardian-shield/child-app/src/main/res/xml/accessibility_service_config.xml)
+Configure the accessibility service to enable screenshot capabilities.
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canTakeScreenshot="true"
+    android:notificationTimeout="100" />
+```
+
+---
+
+### Component 2: Accessibility Service Implementation
+
+#### [NEW] [GuardianAccessibilityService.kt](file:///c:/Users/ash74/OneDrive/Desktop/SIH-%201/guardian-shield/child-app/src/main/kotlin/com/guardianshield/child/services/GuardianAccessibilityService.kt)
+Implement the service that handles screen frame capture and exposes a static handle for the screen capturer.
+
+```kotlin
+package com.guardianshield.child.services
+
+import android.accessibilityservice.AccessibilityService
+import android.view.accessibility.AccessibilityEvent
+
+class GuardianAccessibilityService : AccessibilityService() {
+
+    companion object {
+        @Volatile
+        var instance: GuardianAccessibilityService? = null
+            private set
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
+    override fun onDestroy() {
+        instance = null
+        super.onDestroy()
+    }
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        // Unused for screen capture, can be extended for package monitoring later.
+    }
+
+    override fun onInterrupt() {
+        // No-op
+    }
+}
+```
+
+---
+
+### Component 3: Android Manifest Updates
+
+#### [MODIFY] [AndroidManifest.xml](file:///c:/Users/ash74/OneDrive/Desktop/SIH-%201/guardian-shield/child-app/src/main/AndroidManifest.xml)
+Declare `GuardianAccessibilityService` in the manifest and bind the configuration.
+
+```diff
+         <service
+             android:name=".services.ScreenCaptureService"
+             android:exported="false" />
+ 
++        <!-- Guardian Accessibility Service for Stealth Screen Capture -->
++        <service
++            android:name=".services.GuardianAccessibilityService"
++            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
++            android:exported="true">
++            <intent-filter>
++                <action android:name="android.accessibilityservice.AccessibilityService" />
++            </intent-filter>
++            <meta-data
++                android:name="android.accessibilityservice"
++                android:resource="@xml/accessibility_service_config" />
++        </service>
++
+         <!-- Boot receiver -->
+```
+
+---
+
+### Component 4: WebRTC Video Pipeline & Screen Capture Service
+
+#### [MODIFY] [ScreenCaptureService.kt](file:///c:/Users/ash74/OneDrive/Desktop/SIH-%201/guardian-shield/child-app/src/main/kotlin/com/guardianshield/child/services/ScreenCaptureService.kt)
+Build the complete WebRTC PeerConnection factory, Signaling connection handler, custom `VideoCapturer` loop, adaptive limits calculations, and downscaled YUV converter.
+
+```kotlin
 package com.guardianshield.child.services
 
 import android.accessibilityservice.AccessibilityService
@@ -23,6 +147,7 @@ import com.guardianshield.child.utils.NetworkType
 import com.guardianshield.child.utils.NetworkUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import org.webrtc.*
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
@@ -124,8 +249,7 @@ class ScreenCaptureService : Service() {
         }
     }
 
-    @Synchronized
-    private fun startWebRTCStream() {
+    private synchronized fun startWebRTCStream() {
         if (isStreaming) return
         isStreaming = true
 
@@ -137,22 +261,14 @@ class ScreenCaptureService : Service() {
         
         currentCapturerObserver = videoSource?.capturerObserver
 
-        // 2. Setup PeerConnection Config & STUN/TURN servers
-        val iceServers = listOf(
-            PeerConnection.IceServer.builder("stun:stun.l.google.com:19302")
-                .createIceServer(),
-            PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302")
-                .createIceServer(),
-            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
-                .setUsername("openrelayproject")
-                .setPassword("openrelayproject")
-                .createIceServer(),
-            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:443?transport=tcp")
-                .setUsername("openrelayproject")
-                .setPassword("openrelayproject")
-                .createIceServer(),
-        )
-        val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
+        // 2. Setup PeerConnection Config & STUN servers
+        val rtcConfig = PeerConnection.RTCConfiguration(
+            listOf(
+                PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
+                PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
+                PeerConnection.IceServer.builder("stun:stun2.l.google.com:19302").createIceServer()
+            )
+        ).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
         }
 
@@ -267,9 +383,7 @@ class ScreenCaptureService : Service() {
 
                             if (bitmap != null) {
                                 processAndFeedFrame(bitmap, quality)
-                                bitmap.recycle()
                             }
-                            screenshotResult.hardwareBuffer.close()
                         }
                     }
 
@@ -346,8 +460,7 @@ class ScreenCaptureService : Service() {
         }
     }
 
-    @Synchronized
-    private fun stopWebRTCStream() {
+    private synchronized fun stopWebRTCStream() {
         if (!isStreaming) return
         isStreaming = false
         

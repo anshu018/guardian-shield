@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_dashboard"
+        android:title="Dashboard"
+        android:icon="@android:drawable/ic_menu_today" />
+    <item
+        android:id="@+id/menu_live"
+        android:title="Live Stream"
+        android:icon="@android:drawable/ic_menu_camera" />
+    <item
+        android:id="@+id/menu_location"
+        android:title="Geofences"
+        android:icon="@android:drawable/ic_menu_mylocation" />
+    <item
+        android:id="@+id/menu_monitoring"
+        android:title="Usage Stats"
+        android:icon="@android:drawable/ic_menu_info_details" />
+    <item
+        android:id="@+id/menu_controls"
+        android:title="Commands"
+        android:icon="@android:drawable/ic_menu_preferences" />
+</menu>

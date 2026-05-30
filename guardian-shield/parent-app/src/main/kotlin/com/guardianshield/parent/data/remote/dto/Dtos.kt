@@ -49,3 +49,12 @@ data class ChildDto(
     val age: Int,
     val phone: String = ""
 )
+
+@Serializable
+data class ParentDto(
+    val id: String? = null,
+    @SerialName("user_id") val userId: String,
+    @SerialName("family_id") val familyId: String,
+    val name: String,
+    val phone: String
+)

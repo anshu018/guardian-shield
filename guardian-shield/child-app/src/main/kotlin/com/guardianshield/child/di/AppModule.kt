@@ -1,10 +1,12 @@
-﻿package com.guardianshield.child.di
+package com.guardianshield.child.di
 
 import android.content.Context
 import com.guardianshield.child.BuildConfig
 import com.guardianshield.child.data.local.LocationDataStore
 import com.guardianshield.child.data.repository.LocationRepositoryImpl
+import com.guardianshield.child.data.repository.AppUsageRepositoryImpl
 import com.guardianshield.child.domain.repository.LocationRepository
+import com.guardianshield.child.domain.repository.AppUsageRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -68,4 +70,10 @@ abstract class RepositoryModule {
     abstract fun bindLocationRepository(
         impl: LocationRepositoryImpl
     ): LocationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppUsageRepository(
+        impl: AppUsageRepositoryImpl
+    ): AppUsageRepository
 }

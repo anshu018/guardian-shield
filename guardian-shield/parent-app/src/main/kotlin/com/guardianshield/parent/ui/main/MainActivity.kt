@@ -4,9 +4,16 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import com.guardianshield.parent.R
 import com.guardianshield.parent.databinding.ActivityMainBinding
 import com.guardianshield.parent.ui.auth.AuthActivity
 import com.guardianshield.parent.ui.auth.AuthViewModel
+import com.guardianshield.parent.ui.controls.ControlsFragment
+import com.guardianshield.parent.ui.dashboard.DashboardFragment
+import com.guardianshield.parent.ui.livescreen.LiveScreenFragment
+import com.guardianshield.parent.ui.location.LocationFragment
+import com.guardianshield.parent.ui.monitoring.MonitoringFragment
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -27,6 +34,33 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        // Dashboard stub — full dashboard coming in L10
+
+        setupNavigation()
+    }
+
+    private fun setupNavigation() {
+        // Load initial Dashboard fragment
+        if (supportFragmentManager.findFragmentById(R.id.fragmentContainer) == null) {
+            loadFragment(DashboardFragment())
+        }
+
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            val fragment: Fragment = when (item.itemId) {
+                R.id.menu_dashboard -> DashboardFragment()
+                R.id.menu_live -> LiveScreenFragment()
+                R.id.menu_location -> LocationFragment()
+                R.id.menu_monitoring -> MonitoringFragment()
+                R.id.menu_controls -> ControlsFragment()
+                else -> return@setOnItemSelectedListener false
+            }
+            loadFragment(fragment)
+            true
+        }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
     }
 }

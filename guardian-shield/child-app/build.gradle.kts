@@ -36,6 +36,8 @@ android {
             "\"${localProps.getProperty("SUPABASE_URL", "https://placeholder.supabase.co")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY",
             "\"${localProps.getProperty("SUPABASE_ANON_KEY", "placeholder")}\"")
+        buildConfigField("String", "SIGNALING_SERVER_URL",
+            "\"${localProps.getProperty("SIGNALING_SERVER_URL", "https://placeholder.railway.app")}\"")
     }
 
     buildFeatures {
@@ -95,6 +97,9 @@ dependencies {
 
     // WebRTC
     implementation(libs.webrtc)
+
+    // Socket.IO signaling
+    implementation(libs.socket.io)
 
     // Serialization
     implementation(libs.kotlinx.serialization)

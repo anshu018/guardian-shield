@@ -10,4 +10,7 @@ interface ParentRepository {
     fun observeChildren(): Flow<List<Child>>
     fun observeSosEvents(): Flow<SosEvent>
     suspend fun sendCommand(cmd: RemoteCommand): Result<Unit>
+    
+    suspend fun fetchAndCacheFamilyId(): Result<String>
+    fun observeChildLocationHistory(childId: String): Flow<List<ChildLocation>>
 }
