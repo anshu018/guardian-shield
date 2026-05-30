@@ -32,7 +32,8 @@ data class Child(
     val id: String,
     val name: String,
     val isOnline: Boolean,
-    val lastLocation: ChildLocation? = null
+    val lastLocation: ChildLocation? = null,
+    val phone: String = ""
 )
 
 data class CallLog(

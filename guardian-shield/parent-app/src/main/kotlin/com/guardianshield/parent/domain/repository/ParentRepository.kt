@@ -21,4 +21,7 @@ interface ParentRepository {
     fun observeCallLogs(childId: String, limit: Int = 50): Flow<List<CallLog>>
     fun observeSmsPreviews(childId: String, limit: Int = 50): Flow<List<SmsPreview>>
     fun observeContacts(childId: String): Flow<List<ContactProfile>>
+    
+    suspend fun resolveSosEvent(eventId: String): Result<Unit>
+    fun observeSosHistory(childId: String): Flow<List<SosEvent>>
 }

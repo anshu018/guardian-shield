@@ -9,6 +9,7 @@ import com.guardianshield.parent.domain.models.ChildLocation
 import com.guardianshield.parent.domain.models.RemoteCommand
 import com.guardianshield.parent.domain.models.CommandType
 import com.guardianshield.parent.data.remote.dto.RemoteCommandDto
+import com.guardianshield.parent.data.remote.dto.SosEventDto
 import com.guardianshield.parent.domain.models.SosEvent
 import com.guardianshield.parent.domain.models.CallLog
 import com.guardianshield.parent.domain.models.SmsPreview
@@ -100,7 +101,8 @@ class ParentRepositoryImpl @Inject constructor(
                 id = dto.id!!,
                 name = dto.name,
                 isOnline = lastLoc?.let { System.currentTimeMillis() - it.timestamp < 30_000 } ?: false,
-                lastLocation = lastLoc
+                lastLocation = lastLoc,
+                phone = dto.phone
             )
         }
 
@@ -196,8 +198,142 @@ class ParentRepositoryImpl @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     override fun observeSosEvents(): Flow<SosEvent> = flow {
-        // Will be wired in Layer 14
+        val familyId = dataStore.getFamilyId() ?: return@flow
+        
+        // 1. Fetch children linked to family to get child IDs
+        val childDtos = supabaseClient.postgrest.from("children")
+            .select {
+                filter {
+                    eq("family_id", familyId)
+                }
+            }.decodeList<ChildDto>()
+        
+        val childIds = childDtos.mapNotNull { it.id }.toSet()
+        if (childIds.isEmpty()) return@flow
+
+        // 2. Fetch any active SOS events initially
+        childIds.forEach { childId ->
+            try {
+                val activeSosDtos = supabaseClient.postgrest.from("sos_events")
+                    .select {
+                        filter {
+                            eq("child_id", childId)
+                            eq("active", true)
+                        }
+                        limit(count = 1)
+                    }.decodeList<SosEventDto>()
+                
+                activeSosDtos.firstOrNull()?.let { dto ->
+                    emit(SosEvent(
+                        id = dto.id ?: "",
+                        childId = dto.childId,
+                        lat = dto.lat,
+                        lng = dto.lng,
+                        active = dto.active,
+                        triggeredAt = dto.triggeredAt?.let { parseIsoToTimestamp(it) } ?: System.currentTimeMillis()
+                    ))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 3. Subscribe to real-time SOS events inserts/updates
+        val channel = supabaseClient.realtime.channel("sos_events_stream")
+        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "sos_events"
+        }
+        channel.subscribe()
+
+        changeFlow.collect { action ->
+            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                val record = action.record
+                val dto = Json.decodeFromJsonElement<SosEventDto>(record)
+                if (childIds.contains(dto.childId)) {
+                    val event = SosEvent(
+                        id = dto.id ?: "",
+                        childId = dto.childId,
+                        lat = dto.lat,
+                        lng = dto.lng,
+                        active = dto.active,
+                        triggeredAt = dto.triggeredAt?.let { parseIsoToTimestamp(it) } ?: System.currentTimeMillis()
+                    )
+                    emit(event)
+                }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
+
+    override suspend fun resolveSosEvent(eventId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            supabaseClient.postgrest.from("sos_events")
+                .update(mapOf("active" to false)) {
+                    filter {
+                        eq("id", eventId)
+                    }
+                }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+
+    override fun observeSosHistory(childId: String): Flow<List<SosEvent>> = flow {
+        // 1. Initial fetch from database
+        val dtos = supabaseClient.postgrest.from("sos_events")
+            .select {
+                filter {
+                    eq("child_id", childId)
+                }
+                order(column = "triggered_at", order = Order.DESCENDING)
+                limit(count = 20)
+            }.decodeList<SosEventDto>()
+        
+        val history = dtos.map {
+            SosEvent(
+                id = it.id ?: "",
+                childId = it.childId,
+                lat = it.lat,
+                lng = it.lng,
+                active = it.active,
+                triggeredAt = it.triggeredAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
+            )
+        }
+        emit(history)
+
+        // 2. Real-time stream of updates
+        val channel = supabaseClient.realtime.channel("sos_history_stream_$childId")
+        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "sos_events"
+        }
+        channel.subscribe()
+
+        val mutableHistory = history.toMutableList()
+        changeFlow.collect { action ->
+            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                val record = action.record
+                val dto = Json.decodeFromJsonElement<SosEventDto>(record)
+                if (dto.childId == childId) {
+                    val event = SosEvent(
+                        id = dto.id ?: "",
+                        childId = dto.childId,
+                        lat = dto.lat,
+                        lng = dto.lng,
+                        active = dto.active,
+                        triggeredAt = dto.triggeredAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
+                    )
+                    val idx = mutableHistory.indexOfFirst { it.id == event.id }
+                    if (idx >= 0) {
+                        mutableHistory[idx] = event
+                    } else {
+                        mutableHistory.add(0, event)
+                        if (mutableHistory.size > 20) mutableHistory.removeAt(mutableHistory.size - 1)
+                    }
+                    emit(mutableHistory.toList())
+                }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
 
     override suspend fun sendCommand(cmd: RemoteCommand): Result<Unit> = withContext(Dispatchers.IO) {
         try {
