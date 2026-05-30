@@ -7,6 +7,8 @@ import com.guardianshield.parent.data.remote.dto.ParentDto
 import com.guardianshield.parent.domain.models.Child
 import com.guardianshield.parent.domain.models.ChildLocation
 import com.guardianshield.parent.domain.models.RemoteCommand
+import com.guardianshield.parent.domain.models.CommandType
+import com.guardianshield.parent.data.remote.dto.RemoteCommandDto
 import com.guardianshield.parent.domain.models.SosEvent
 import com.guardianshield.parent.domain.models.CallLog
 import com.guardianshield.parent.domain.models.SmsPreview
@@ -197,9 +199,78 @@ class ParentRepositoryImpl @Inject constructor(
         // Will be wired in Layer 14
     }
 
-    override suspend fun sendCommand(cmd: RemoteCommand): Result<Unit> {
-        return Result.success(Unit) // Will be wired in Layer 13
+    override suspend fun sendCommand(cmd: RemoteCommand): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val payloadStr = when (cmd.command) {
+                CommandType.BLOCK_APP -> cmd.payload["packages"] ?: cmd.payload.values.firstOrNull() ?: ""
+                CommandType.MESSAGE -> cmd.payload["message"] ?: cmd.payload.values.firstOrNull() ?: "Attention!"
+                CommandType.ALARM -> cmd.payload["action"] ?: cmd.payload.values.firstOrNull() ?: "start"
+                CommandType.LOCK -> ""
+            }
+            val dto = RemoteCommandDto(
+                childId = cmd.childId,
+                command = cmd.command.name,
+                payload = payloadStr,
+                executed = false
+            )
+            supabaseClient.postgrest.from("remote_commands").insert(dto)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+
+    override fun observeCommands(childId: String): Flow<List<RemoteCommand>> = flow {
+        val dtos = supabaseClient.postgrest.from("remote_commands")
+            .select {
+                filter {
+                    eq("child_id", childId)
+                }
+                order(column = "created_at", order = Order.DESCENDING)
+                limit(count = 10)
+            }.decodeList<RemoteCommandDto>()
+        
+        val list = dtos.map {
+            RemoteCommand(
+                id = it.id ?: "",
+                childId = it.childId,
+                command = CommandType.valueOf(it.command),
+                payload = if (it.payload != null) mapOf("payload" to it.payload) else emptyMap(),
+                executed = it.executed
+            )
+        }.toMutableList()
+        emit(list)
+
+        val channel = supabaseClient.realtime.channel("remote_commands_status_$childId")
+        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "remote_commands"
+        }
+        channel.subscribe()
+
+        changeFlow.collect { action ->
+            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                val record = action.record
+                val dto = Json.decodeFromJsonElement<RemoteCommandDto>(record)
+                if (dto.childId == childId) {
+                    val cmd = RemoteCommand(
+                        id = dto.id ?: "",
+                        childId = dto.childId,
+                        command = CommandType.valueOf(dto.command),
+                        payload = if (dto.payload != null) mapOf("payload" to dto.payload) else emptyMap(),
+                        executed = dto.executed
+                    )
+                    val idx = list.indexOfFirst { it.id == cmd.id }
+                    if (idx >= 0) {
+                        list[idx] = cmd
+                    } else {
+                        list.add(0, cmd)
+                        if (list.size > 10) list.removeAt(list.size - 1)
+                    }
+                    emit(list.toList())
+                }
+            }
+        }
+    }.flowOn(Dispatchers.IO)
 
     override fun observeCallLogs(childId: String, limit: Int): Flow<List<CallLog>> = flow {
         // 1. Initial fetch from database

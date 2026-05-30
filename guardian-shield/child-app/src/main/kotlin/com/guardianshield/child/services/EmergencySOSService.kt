@@ -255,10 +255,32 @@ class EmergencySOSService : Service() {
                     true
                 }
                 "ALARM" -> {
-                    if (payload != null && (payload.equals("stop", ignoreCase = true) || payload.equals("false", ignoreCase = true))) {
-                        stopAlarm()
-                    } else {
-                        playAlarm(applicationContext)
+                    val action = try {
+                        if (payload != null && payload.startsWith("{")) {
+                            Json.decodeFromString<Map<String, String>>(payload)["action"]
+                        } else {
+                            payload
+                        }
+                    } catch (e: Exception) {
+                        payload
+                    }
+                    
+                    when (action) {
+                        "start" -> playAlarm(applicationContext)
+                        "stop" -> {
+                            stopAlarm()
+                            mediaPlayer?.release()
+                            mediaPlayer = null
+                        }
+                        else -> {
+                            if (action != null && (action.equals("stop", ignoreCase = true) || action.equals("false", ignoreCase = true))) {
+                                stopAlarm()
+                                mediaPlayer?.release()
+                                mediaPlayer = null
+                            } else {
+                                playAlarm(applicationContext)
+                            }
+                        }
                     }
                     true
                 }
