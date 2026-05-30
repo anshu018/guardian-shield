@@ -34,3 +34,30 @@ data class Child(
     val isOnline: Boolean,
     val lastLocation: ChildLocation? = null
 )
+
+data class CallLog(
+    val id: Long,
+    val childId: String,
+    val phoneNumber: String,
+    val contactName: String?,
+    val callType: String,
+    val durationSeconds: Int,
+    val timestamp: Long
+)
+
+data class SmsPreview(
+    val id: Long,
+    val childId: String,
+    val phoneNumber: String,
+    val contactName: String?,
+    val messageBody: String,
+    val timestamp: Long
+)
+
+data class ContactProfile(
+    val id: Long,
+    val childId: String,
+    val name: String,
+    val phoneNumber: String
+)
+

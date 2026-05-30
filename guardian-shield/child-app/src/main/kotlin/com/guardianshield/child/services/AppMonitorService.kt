@@ -14,6 +14,9 @@ import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import com.guardianshield.child.data.local.LocationDataStore
 import com.guardianshield.child.data.remote.dto.RemoteCommandDto
+import com.guardianshield.child.data.remote.dto.CallLogDto
+import com.guardianshield.child.data.remote.dto.SmsPreviewDto
+import com.guardianshield.child.data.remote.dto.ContactProfileDto
 import com.guardianshield.child.domain.repository.AppUsageRepository
 import com.guardianshield.child.ui.block.BlockActivity
 import com.guardianshield.child.utils.Constants
@@ -50,6 +53,7 @@ class AppMonitorService : Service() {
         startForeground(Constants.NOTIFICATION_ID + 1, buildNotification())
         startPolling()
         startRealtimeSubscription()
+        startTelemetrySync()
         return START_STICKY
     }
 
@@ -227,6 +231,274 @@ class AppMonitorService : Service() {
         .setSilent(true)
         .setOngoing(true)
         .build()
+
+    private fun startTelemetrySync() {
+        serviceScope.launch {
+            // First run on service startup
+            syncCallLogs()
+            syncSmsPreviews()
+            syncContacts()
+
+            // Periodic loop running call/SMS check every 5 minutes
+            var minutesElapsed = 0
+            while (true) {
+                delay(60000L) // Wait 1 minute
+                minutesElapsed++
+
+                if (minutesElapsed % 5 == 0) {
+                    syncCallLogs()
+                    syncSmsPreviews()
+                }
+
+                // Contacts sync once every 24 hours (1440 minutes)
+                if (minutesElapsed >= 1440) {
+                    syncContacts()
+                    minutesElapsed = 0
+                }
+            }
+        }
+    }
+
+    private suspend fun syncCallLogs() {
+        try {
+            val childId = dataStore.getLastKnownLocation()?.childId ?: ""
+            if (childId.isEmpty()) return
+
+            val lastSync = dataStore.getLastCallSync()
+            val contentResolver = applicationContext.contentResolver
+
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.READ_CALL_LOG
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return
+            }
+
+            val cursor = contentResolver.query(
+                android.provider.CallLog.Calls.CONTENT_URI,
+                arrayOf(
+                    android.provider.CallLog.Calls.NUMBER,
+                    android.provider.CallLog.Calls.CACHED_NAME,
+                    android.provider.CallLog.Calls.TYPE,
+                    android.provider.CallLog.Calls.DURATION,
+                    android.provider.CallLog.Calls.DATE
+                ),
+                "${android.provider.CallLog.Calls.DATE} > ?",
+                arrayOf(lastSync.toString()),
+                "${android.provider.CallLog.Calls.DATE} ASC"
+            )
+
+            cursor?.use { c ->
+                val numIdx = c.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                val nameIdx = c.getColumnIndex(android.provider.CallLog.Calls.CACHED_NAME)
+                val typeIdx = c.getColumnIndex(android.provider.CallLog.Calls.TYPE)
+                val durIdx = c.getColumnIndex(android.provider.CallLog.Calls.DURATION)
+                val dateIdx = c.getColumnIndex(android.provider.CallLog.Calls.DATE)
+
+                var maxTimestamp = lastSync
+                val newLogs = mutableListOf<CallLogDto>()
+
+                while (c.moveToNext()) {
+                    val phone = c.getString(numIdx) ?: ""
+                    val name = c.getString(nameIdx)
+                    val rawType = c.getInt(typeIdx)
+                    val duration = c.getInt(durIdx)
+                    val timestamp = c.getLong(dateIdx)
+
+                    if (timestamp > maxTimestamp) {
+                        maxTimestamp = timestamp
+                    }
+
+                    val callType = when (rawType) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> "INCOMING"
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "OUTGOING"
+                        android.provider.CallLog.Calls.MISSED_TYPE -> "MISSED"
+                        else -> "OTHER"
+                    }
+
+                    newLogs.add(
+                        CallLogDto(
+                            childId = childId,
+                            phoneNumber = phone,
+                            contactName = name,
+                            callType = callType,
+                            durationSeconds = duration
+                        )
+                    )
+                }
+
+                if (newLogs.isNotEmpty()) {
+                    supabaseClient.postgrest.from("call_logs").insert(newLogs)
+                    dataStore.saveLastCallSync(maxTimestamp)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun syncSmsPreviews() {
+        try {
+            val childId = dataStore.getLastKnownLocation()?.childId ?: ""
+            if (childId.isEmpty()) return
+
+            val lastSync = dataStore.getLastSmsSync()
+            val contentResolver = applicationContext.contentResolver
+
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.READ_SMS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return
+            }
+
+            val cursor = contentResolver.query(
+                android.net.Uri.parse("content://sms"),
+                arrayOf("_id", "address", "body", "date"),
+                "date > ?",
+                arrayOf(lastSync.toString()),
+                "date ASC"
+            )
+
+            cursor?.use { c ->
+                val addrIdx = c.getColumnIndex("address")
+                val bodyIdx = c.getColumnIndex("body")
+                val dateIdx = c.getColumnIndex("date")
+
+                var maxTimestamp = lastSync
+                val newSms = mutableListOf<SmsPreviewDto>()
+
+                while (c.moveToNext()) {
+                    val phone = c.getString(addrIdx) ?: ""
+                    val body = c.getString(bodyIdx) ?: ""
+                    val timestamp = c.getLong(dateIdx)
+
+                    if (timestamp > maxTimestamp) {
+                        maxTimestamp = timestamp
+                    }
+
+                    val previewBody = if (body.length > 100) body.substring(0, 100) + "..." else body
+                    val contactName = getContactNameFromPhone(phone)
+
+                    newSms.add(
+                        SmsPreviewDto(
+                            childId = childId,
+                            phoneNumber = phone,
+                            contactName = contactName,
+                            messageBody = previewBody
+                        )
+                    )
+                }
+
+                if (newSms.isNotEmpty()) {
+                    supabaseClient.postgrest.from("sms_previews").insert(newSms)
+                    dataStore.saveLastSmsSync(maxTimestamp)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun syncContacts() {
+        try {
+            val childId = dataStore.getLastKnownLocation()?.childId ?: ""
+            if (childId.isEmpty()) return
+
+            val lastSync = dataStore.getLastContactsSync()
+            val now = System.currentTimeMillis()
+
+            if (now - lastSync < 24 * 60 * 60 * 1000L) {
+                return
+            }
+
+            val contentResolver = applicationContext.contentResolver
+
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.READ_CONTACTS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return
+            }
+
+            val cursor = contentResolver.query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER
+                ),
+                null,
+                null,
+                null
+            )
+
+            val contactsMap = mutableMapOf<String, String>()
+            cursor?.use { c ->
+                val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+
+                while (c.moveToNext()) {
+                    val name = c.getString(nameIdx) ?: ""
+                    val phone = c.getString(numIdx) ?: ""
+                    if (phone.isNotEmpty() && name.isNotEmpty()) {
+                        val cleanPhone = phone.replace("\\s".toRegex(), "").replace("-", "")
+                        contactsMap[cleanPhone] = name
+                    }
+                }
+            }
+
+            if (contactsMap.isNotEmpty()) {
+                val contactDtos = contactsMap.map { (phone, name) ->
+                    ContactProfileDto(
+                        childId = childId,
+                        name = name,
+                        phoneNumber = phone
+                    )
+                }
+
+                supabaseClient.postgrest.from("child_contacts").delete {
+                    filter {
+                        eq("child_id", childId)
+                    }
+                }
+
+                contactDtos.chunked(100).forEach { batch ->
+                    supabaseClient.postgrest.from("child_contacts").insert(batch)
+                }
+
+                dataStore.saveLastContactsSync(now)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun getContactNameFromPhone(phoneNumber: String): String? {
+        if (phoneNumber.isEmpty()) return null
+        try {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this, android.Manifest.permission.READ_CONTACTS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return null
+            }
+            val uri = android.net.Uri.withAppendedPath(
+                android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                android.net.Uri.encode(phoneNumber)
+            )
+            val cursor = contentResolver.query(
+                uri,
+                arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    return c.getString(c.getColumnIndexOrThrow(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME))
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 }

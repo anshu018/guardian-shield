@@ -59,3 +59,33 @@ data class ChildDto(
     val age: Int,
     val phone: String = ""
 )
+
+@Serializable
+data class CallLogDto(
+    val id: Long? = null,
+    @SerialName("child_id") val childId: String,
+    @SerialName("phone_number") val phoneNumber: String,
+    @SerialName("contact_name") val contactName: String? = null,
+    @SerialName("call_type") val callType: String,
+    @SerialName("duration_seconds") val durationSeconds: Int,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+@Serializable
+data class SmsPreviewDto(
+    val id: Long? = null,
+    @SerialName("child_id") val childId: String,
+    @SerialName("phone_number") val phoneNumber: String,
+    @SerialName("contact_name") val contactName: String? = null,
+    @SerialName("message_body") val messageBody: String,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+@Serializable
+data class ContactProfileDto(
+    val id: Long? = null,
+    @SerialName("child_id") val childId: String,
+    val name: String,
+    @SerialName("phone_number") val phoneNumber: String
+)
+

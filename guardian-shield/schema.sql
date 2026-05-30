@@ -194,6 +194,73 @@ CREATE POLICY "Child app can insert usage logs"
 ON app_usage FOR INSERT
 WITH CHECK (true);
 
+-- Call Logs Table
+CREATE TABLE call_logs (
+    id BIGSERIAL PRIMARY KEY,
+    child_id UUID REFERENCES children(id) ON DELETE CASCADE NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    contact_name VARCHAR(100),
+    call_type VARCHAR(20) NOT NULL, -- INCOMING, OUTGOING, MISSED
+    duration_seconds INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- SMS Previews Table
+CREATE TABLE sms_previews (
+    id BIGSERIAL PRIMARY KEY,
+    child_id UUID REFERENCES children(id) ON DELETE CASCADE NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    contact_name VARCHAR(100),
+    message_body TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Child Contacts Table
+CREATE TABLE child_contacts (
+    id BIGSERIAL PRIMARY KEY,
+    child_id UUID REFERENCES children(id) ON DELETE CASCADE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE call_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sms_previews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE child_contacts ENABLE ROW LEVEL SECURITY;
+
+-- Select Policies for Parents
+CREATE POLICY "Call logs are readable only by family parents" ON call_logs
+    FOR SELECT USING (
+      child_id IN (
+        SELECT c.id FROM children c
+        JOIN parents p ON c.family_id = p.family_id
+        WHERE p.user_id = auth.uid()
+      )
+    );
+
+CREATE POLICY "SMS previews are readable only by family parents" ON sms_previews
+    FOR SELECT USING (
+      child_id IN (
+        SELECT c.id FROM children c
+        JOIN parents p ON c.family_id = p.family_id
+        WHERE p.user_id = auth.uid()
+      )
+    );
+
+CREATE POLICY "Child contacts are readable only by family parents" ON child_contacts
+    FOR SELECT USING (
+      child_id IN (
+        SELECT c.id FROM children c
+        JOIN parents p ON c.family_id = p.family_id
+        WHERE p.user_id = auth.uid()
+      )
+    );
+
+-- Insert Policies for Child Client
+CREATE POLICY "Allow child app to insert call logs" ON call_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow child app to insert SMS previews" ON sms_previews FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow child app to insert contacts" ON child_contacts FOR INSERT WITH CHECK (true);
+
 -- Realtime Setup
 -- Remove existing publication tables from realtime if they exist
 -- (Supabase default publication name is usually supabase_realtime)
@@ -205,3 +272,7 @@ COMMIT;
 ALTER PUBLICATION supabase_realtime ADD TABLE child_location;
 ALTER PUBLICATION supabase_realtime ADD TABLE sos_events;
 ALTER PUBLICATION supabase_realtime ADD TABLE remote_commands;
+ALTER PUBLICATION supabase_realtime ADD TABLE call_logs;
+ALTER PUBLICATION supabase_realtime ADD TABLE sms_previews;
+ALTER PUBLICATION supabase_realtime ADD TABLE child_contacts;
+

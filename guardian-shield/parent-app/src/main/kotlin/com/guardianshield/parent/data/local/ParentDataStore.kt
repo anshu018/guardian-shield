@@ -20,6 +20,7 @@ class ParentDataStore @Inject constructor(
     companion object {
         val LOGGED_IN = booleanPreferencesKey("logged_in")
         val FAMILY_ID = stringPreferencesKey("family_id")
+        val SELECTED_CHILD_ID = stringPreferencesKey("selected_child_id")
     }
 
     suspend fun setLoggedIn(loggedIn: Boolean) {
@@ -36,5 +37,13 @@ class ParentDataStore @Inject constructor(
 
     suspend fun getFamilyId(): String? {
         return context.dataStore.data.map { it[FAMILY_ID] }.first()
+    }
+
+    suspend fun saveSelectedChildId(id: String) {
+        context.dataStore.edit { it[SELECTED_CHILD_ID] = id }
+    }
+
+    fun observeSelectedChildId(): kotlinx.coroutines.flow.Flow<String?> {
+        return context.dataStore.data.map { it[SELECTED_CHILD_ID] }
     }
 }

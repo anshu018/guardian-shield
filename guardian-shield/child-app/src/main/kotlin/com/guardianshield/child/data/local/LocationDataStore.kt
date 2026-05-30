@@ -39,6 +39,9 @@ class LocationDataStore @Inject constructor(
         val PARENT_PHONE = stringPreferencesKey("parent_phone")
         val CHILD_NAME = stringPreferencesKey("child_name")
         val STATIONARY_START_TIME = longPreferencesKey("stationary_start_time")
+        val LAST_CALL_SYNC = longPreferencesKey("last_call_sync")
+        val LAST_SMS_SYNC = longPreferencesKey("last_sms_sync")
+        val LAST_CONTACTS_SYNC = longPreferencesKey("last_contacts_sync")
     }
 
     suspend fun saveLastKnownLocation(location: ChildLocation) {
@@ -161,5 +164,29 @@ class LocationDataStore @Inject constructor(
 
     suspend fun getStationaryStartTime(): Long {
         return context.dataStore.data.map { it[STATIONARY_START_TIME] }.first() ?: 0L
+    }
+
+    suspend fun saveLastCallSync(time: Long) {
+        context.dataStore.edit { it[LAST_CALL_SYNC] = time }
+    }
+
+    suspend fun getLastCallSync(): Long {
+        return context.dataStore.data.map { it[LAST_CALL_SYNC] }.first() ?: 0L
+    }
+
+    suspend fun saveLastSmsSync(time: Long) {
+        context.dataStore.edit { it[LAST_SMS_SYNC] = time }
+    }
+
+    suspend fun getLastSmsSync(): Long {
+        return context.dataStore.data.map { it[LAST_SMS_SYNC] }.first() ?: 0L
+    }
+
+    suspend fun saveLastContactsSync(time: Long) {
+        context.dataStore.edit { it[LAST_CONTACTS_SYNC] = time }
+    }
+
+    suspend fun getLastContactsSync(): Long {
+        return context.dataStore.data.map { it[LAST_CONTACTS_SYNC] }.first() ?: 0L
     }
 }
