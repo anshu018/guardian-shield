@@ -7,13 +7,13 @@
     android:padding="32dp"
     android:background="#121212">
 
-    <!-- ViewFlipper: child 0 = phone screen, child 1 = OTP screen -->
+    <!-- ViewFlipper: child 0 = email screen, child 1 = OTP screen -->
     <ViewFlipper
         android:id="@+id/viewFlipper"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- ====== SCREEN 0: Phone Input ====== -->
+        <!-- ====== SCREEN 0: Email Input ====== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -33,44 +33,24 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Enter your mobile number to continue"
+                android:text="Enter your email address to continue"
                 android:textSize="15sp"
                 android:textColor="#AAAAAA"
                 android:gravity="center"
                 android:layout_marginBottom="40dp" />
 
-            <LinearLayout
+            <EditText
+                android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="24dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="+91"
-                    android:textSize="18sp"
-                    android:textColor="#FFFFFF"
-                    android:background="@android:color/transparent"
-                    android:paddingEnd="8dp"
-                    android:paddingStart="4dp" />
-
-                <EditText
-                    android:id="@+id/etPhone"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="10-digit mobile number"
-                    android:textColorHint="#777777"
-                    android:textColor="#FFFFFF"
-                    android:textSize="18sp"
-                    android:inputType="phone"
-                    android:maxLength="10"
-                    android:digits="0123456789"
-                    android:background="#1E1E1E"
-                    android:padding="12dp" />
-            </LinearLayout>
+                android:hint="Email address"
+                android:textColorHint="#777777"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:inputType="textEmailAddress"
+                android:background="#1E1E1E"
+                android:padding="12dp"
+                android:layout_marginBottom="24dp" />
 
             <Button
                 android:id="@+id/btnSendOtp"
@@ -133,7 +113,7 @@
                 android:id="@+id/tvOtpSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="We sent a 6-digit code to your number"
+                android:text="We sent a 6-digit code to your email"
                 android:textSize="15sp"
                 android:textColor="#AAAAAA"
                 android:gravity="center"

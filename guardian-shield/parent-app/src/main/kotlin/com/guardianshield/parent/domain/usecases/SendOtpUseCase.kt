@@ -6,12 +6,12 @@ import javax.inject.Inject
 class SendOtpUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    // Validates 10-digit Indian phone number before calling repository
+    // Validates email address format before calling repository
     // Returns Result.failure with clear message if format is wrong
-    suspend operator fun invoke(phone: String): Result<Unit> {
-        if (phone.length != 10 || !phone.all { it.isDigit() }) {
-            return Result.failure(Exception("Enter a valid 10-digit Indian mobile number"))
+    suspend operator fun invoke(email: String): Result<Unit> {
+        if (!email.contains("@") || !email.contains(".") || email.length < 5) {
+            return Result.failure(Exception("Enter a valid email address"))
         }
-        return authRepository.sendOtp(phone)
+        return authRepository.sendOtp(email)
     }
 }

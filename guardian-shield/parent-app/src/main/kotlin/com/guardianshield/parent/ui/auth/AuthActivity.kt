@@ -17,34 +17,34 @@ class AuthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAuthBinding
     private val viewModel: AuthViewModel by viewModels()
 
-    // Tracks current phone for OTP verification step
-    private var currentPhone: String = ""
+    // Tracks current email for OTP verification step
+    private var currentEmail: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAuthBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupPhoneScreen()
+        setupEmailScreen()
         setupOtpScreen()
         observeState()
     }
 
-    private fun setupPhoneScreen() {
+    private fun setupEmailScreen() {
         binding.btnSendOtp.setOnClickListener {
-            val phone = binding.etPhone.text?.toString() ?: ""
-            viewModel.sendOtp(phone)
+            val email = binding.etEmail.text?.toString() ?: ""
+            viewModel.sendOtp(email)
         }
     }
 
     private fun setupOtpScreen() {
         binding.btnVerifyOtp.setOnClickListener {
             val token = binding.etOtp.text?.toString() ?: ""
-            viewModel.verifyOtp(currentPhone, token)
+            viewModel.verifyOtp(currentEmail, token)
         }
 
         binding.tvResendOtp.setOnClickListener {
-            viewModel.sendOtp(currentPhone)
+            viewModel.sendOtp(currentEmail)
         }
 
         binding.tvBackArrow.setOnClickListener {
@@ -57,24 +57,24 @@ class AuthActivity : AppCompatActivity() {
             viewModel.uiState.collect { state ->
                 when (state) {
                     is AuthUiState.Idle -> {
-                        setPhoneScreenLoading(false)
+                        setEmailScreenLoading(false)
                         setOtpScreenLoading(false)
                     }
 
                     is AuthUiState.Loading -> {
                         // Show loading on whichever screen is active
                         if (binding.viewFlipper.displayedChild == 0) {
-                            setPhoneScreenLoading(true)
+                            setEmailScreenLoading(true)
                         } else {
                             setOtpScreenLoading(true)
                         }
                     }
 
                     is AuthUiState.OtpSent -> {
-                        currentPhone = state.phone
-                        setPhoneScreenLoading(false)
+                        currentEmail = state.email
+                        setEmailScreenLoading(false)
                         binding.tvOtpSubtitle.text =
-                            "We sent a 6-digit code to +91${state.phone}"
+                            "We sent a 6-digit code to ${state.email}"
                         binding.viewFlipper.displayedChild = 1
                         setOtpScreenLoading(false)
                         binding.tvOtpError.visibility = View.GONE
@@ -86,7 +86,7 @@ class AuthActivity : AppCompatActivity() {
                     }
 
                     is AuthUiState.Error -> {
-                        setPhoneScreenLoading(false)
+                        setEmailScreenLoading(false)
                         setOtpScreenLoading(false)
                         if (binding.viewFlipper.displayedChild == 0) {
                             binding.tvPhoneError.text = state.message
@@ -101,7 +101,7 @@ class AuthActivity : AppCompatActivity() {
         }
     }
 
-    private fun setPhoneScreenLoading(loading: Boolean) {
+    private fun setEmailScreenLoading(loading: Boolean) {
         binding.progressPhone.visibility = if (loading) View.VISIBLE else View.GONE
         binding.btnSendOtp.isEnabled = !loading
         if (!loading) binding.tvPhoneError.visibility = View.GONE

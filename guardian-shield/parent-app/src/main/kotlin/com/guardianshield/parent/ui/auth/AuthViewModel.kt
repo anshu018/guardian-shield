@@ -15,7 +15,7 @@ import javax.inject.Inject
 sealed class AuthUiState {
     object Idle : AuthUiState()
     object Loading : AuthUiState()
-    data class OtpSent(val phone: String) : AuthUiState()
+    data class OtpSent(val email: String) : AuthUiState()
     object AuthSuccess : AuthUiState()
     data class Error(val message: String) : AuthUiState()
 }
@@ -30,19 +30,19 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
-    fun sendOtp(phone: String) {
+    fun sendOtp(email: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-            sendOtpUseCase(phone)
-                .onSuccess { _uiState.value = AuthUiState.OtpSent(phone) }
+            sendOtpUseCase(email)
+                .onSuccess { _uiState.value = AuthUiState.OtpSent(email) }
                 .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Failed to send OTP") }
         }
     }
 
-    fun verifyOtp(phone: String, token: String) {
+    fun verifyOtp(email: String, token: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
-            verifyOtpUseCase(phone, token)
+            verifyOtpUseCase(email, token)
                 .onSuccess { _uiState.value = AuthUiState.AuthSuccess }
                 .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Invalid OTP") }
         }

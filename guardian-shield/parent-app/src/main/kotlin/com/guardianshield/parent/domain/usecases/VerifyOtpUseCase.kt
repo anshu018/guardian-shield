@@ -7,10 +7,10 @@ class VerifyOtpUseCase @Inject constructor(
     private val authRepository: AuthRepository
 ) {
     // Validates 6-digit OTP before calling repository
-    suspend operator fun invoke(phone: String, token: String): Result<Unit> {
+    suspend operator fun invoke(email: String, token: String): Result<Unit> {
         if (token.length != 6 || !token.all { it.isDigit() }) {
-            return Result.failure(Exception("Enter the 6-digit OTP sent to your number"))
+            return Result.failure(Exception("Enter the 6-digit OTP sent to your email"))
         }
-        return authRepository.verifyOtp(phone, token)
+        return authRepository.verifyOtp(email, token)
     }
 }

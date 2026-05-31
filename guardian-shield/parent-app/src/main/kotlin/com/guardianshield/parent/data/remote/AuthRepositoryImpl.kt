@@ -12,13 +12,11 @@ class AuthRepositoryImpl @Inject constructor(
     private val supabaseClient: SupabaseClient
 ) : AuthRepository {
 
-    // phone arrives as 10 digits — always convert to E.164 internally
-    override suspend fun sendOtp(phone: String): Result<Unit> =
+    override suspend fun sendOtp(email: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                val e164phone = "+91$phone"
                 supabaseClient.auth.signInWith(OTP) {
-                    this.phone = e164phone
+                    this.email = email
                 }
                 Result.success(Unit)
             } catch (e: Exception) {
@@ -26,13 +24,12 @@ class AuthRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun verifyOtp(phone: String, token: String): Result<Unit> =
+    override suspend fun verifyOtp(email: String, token: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
-                val e164phone = "+91$phone"
-                supabaseClient.auth.verifyPhoneOtp(
-                    type = OtpType.Phone.SMS,
-                    phone = e164phone,
+                supabaseClient.auth.verifyEmailOtp(
+                    type = OtpType.Email.EMAIL,
+                    email = email,
                     token = token
                 )
                 Result.success(Unit)
