@@ -63,6 +63,39 @@
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="16dp" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="── OR FOR TESTING ──"
+                android:textColor="#777777"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Test Password"
+                android:textColorHint="#777777"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:inputType="textPassword"
+                android:background="#1E1E1E"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/btnLoginPassword"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:text="LOGIN WITH PASSWORD"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:backgroundTint="#FF6B00"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="16dp" />
+
             <ProgressBar
                 android:id="@+id/progressPhone"
                 android:layout_width="wrap_content"

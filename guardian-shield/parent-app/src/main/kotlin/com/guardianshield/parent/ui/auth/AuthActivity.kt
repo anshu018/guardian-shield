@@ -35,6 +35,12 @@ class AuthActivity : AppCompatActivity() {
             val email = binding.etEmail.text?.toString() ?: ""
             viewModel.sendOtp(email)
         }
+
+        binding.btnLoginPassword.setOnClickListener {
+            val email = binding.etEmail.text?.toString() ?: ""
+            val password = binding.etPassword.text?.toString() ?: ""
+            viewModel.signInWithPassword(email, password)
+        }
     }
 
     private fun setupOtpScreen() {
@@ -104,6 +110,7 @@ class AuthActivity : AppCompatActivity() {
     private fun setEmailScreenLoading(loading: Boolean) {
         binding.progressPhone.visibility = if (loading) View.VISIBLE else View.GONE
         binding.btnSendOtp.isEnabled = !loading
+        binding.btnLoginPassword.isEnabled = !loading
         if (!loading) binding.tvPhoneError.visibility = View.GONE
     }
 

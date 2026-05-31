@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
 import javax.inject.Inject
 
 sealed class AuthUiState {
@@ -24,7 +27,8 @@ sealed class AuthUiState {
 class AuthViewModel @Inject constructor(
     private val sendOtpUseCase: SendOtpUseCase,
     private val verifyOtpUseCase: VerifyOtpUseCase,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val supabaseClient: SupabaseClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -45,6 +49,21 @@ class AuthViewModel @Inject constructor(
             verifyOtpUseCase(email, token)
                 .onSuccess { _uiState.value = AuthUiState.AuthSuccess }
                 .onFailure { _uiState.value = AuthUiState.Error(it.message ?: "Invalid OTP") }
+        }
+    }
+
+    fun signInWithPassword(email: String, password: String) {
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            try {
+                supabaseClient.auth.signInWith(Email) {
+                    this.email = email
+                    this.password = password
+                }
+                _uiState.value = AuthUiState.AuthSuccess
+            } catch (e: Exception) {
+                _uiState.value = AuthUiState.Error(e.message ?: "Login failed")
+            }
         }
     }
 
