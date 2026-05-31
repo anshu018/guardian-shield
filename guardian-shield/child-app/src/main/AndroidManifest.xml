@@ -10,6 +10,7 @@
     <!-- Services -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -88,10 +89,12 @@
 
         <service
             android:name=".services.AppMonitorService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
 
         <service
             android:name=".services.EmergencySOSService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
 
         <service
