@@ -1,5 +1,8 @@
 package com.guardianshield.parent.ui.dashboard
 
+import android.content.ClipboardManager
+import android.content.ClipData
+import android.content.Context
 import android.graphics.Color
 import android.graphics.ColorMatrixColorFilter
 import android.os.Bundle
@@ -74,10 +77,19 @@ class DashboardFragment : Fragment() {
                         binding.tvChildName.text = "Loading..."
                     }
                     is DashboardUiState.Empty -> {
-                        binding.tvChildName.text = "No child connected"
-                        binding.tvStatusText.text = "UNLINKED"
+                        binding.cardChildStatus.visibility = View.GONE
+                        binding.cardLinkingPIN.visibility = View.VISIBLE
+                        binding.tvLinkingCode.text = state.familyCode
+                        binding.btnCopyCode.setOnClickListener {
+                            val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Family PIN", state.familyCode)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(requireContext(), "Family PIN copied to clipboard!", Toast.LENGTH_SHORT).show()
+                        }
                     }
                     is DashboardUiState.Success -> {
+                        binding.cardLinkingPIN.visibility = View.GONE
+                        binding.cardChildStatus.visibility = View.VISIBLE
                         updateStatusPanel(state.selectedChild)
                         updateChildLocationOnMap(state.selectedChild.lastLocation)
                     }

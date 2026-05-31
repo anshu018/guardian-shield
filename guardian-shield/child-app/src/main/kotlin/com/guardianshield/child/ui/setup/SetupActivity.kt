@@ -86,6 +86,14 @@ class SetupActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
+        // Device Linking Link Button Click
+        binding.btnLink.setOnClickListener {
+            val pin = binding.etPin.text?.toString() ?: ""
+            val name = binding.etChildName.text?.toString() ?: ""
+            val age = binding.etChildAge.text?.toString() ?: ""
+            viewModel.linkDevice(pin, name, age)
+        }
+
         // Location Permission Click
         binding.btnLocation.setOnClickListener {
             val state = viewModel.uiState.value
@@ -172,11 +180,27 @@ class SetupActivity : AppCompatActivity() {
         // Update ViewFlipper display child and ProgressBar tracking
         binding.viewFlipper.displayedChild = state.currentStep
         binding.progressBar.progress = state.currentStep + 1
-        binding.tvStepIndicator.text = "Step ${state.currentStep + 1} of 6"
+        binding.tvStepIndicator.text = "Step ${state.currentStep + 1} of 7"
 
         // Step-specific visual elements updating
         when (state.currentStep) {
             0 -> {
+                // Device Linking step
+                binding.btnLink.isEnabled = !state.isLinkingLoading
+                binding.etPin.isEnabled = !state.isLinkingLoading
+                binding.etChildName.isEnabled = !state.isLinkingLoading
+                binding.etChildAge.isEnabled = !state.isLinkingLoading
+
+                binding.progressLinking.visibility = if (state.isLinkingLoading) View.VISIBLE else View.GONE
+
+                if (state.linkingError != null) {
+                    binding.tvLinkingError.text = state.linkingError
+                    binding.tvLinkingError.visibility = View.VISIBLE
+                } else {
+                    binding.tvLinkingError.visibility = View.GONE
+                }
+            }
+            1 -> {
                 // Precision location indicator
                 if (state.isFineLocationGranted) {
                     binding.tvLocationState.text = "Granted"
@@ -218,7 +242,7 @@ class SetupActivity : AppCompatActivity() {
                     binding.btnLocation.isEnabled = false
                 }
             }
-            1 -> {
+            2 -> {
                 // Accessibility indicator
                 if (state.isAccessibilityGranted) {
                     binding.tvAccessibilityState.text = "Active"
@@ -232,7 +256,7 @@ class SetupActivity : AppCompatActivity() {
                     binding.btnAccessibility.isEnabled = true
                 }
             }
-            2 -> {
+            3 -> {
                 // Device Admin indicator
                 if (state.isAdminGranted) {
                     binding.tvAdminState.text = "Active"
@@ -246,7 +270,7 @@ class SetupActivity : AppCompatActivity() {
                     binding.btnAdmin.isEnabled = true
                 }
             }
-            3 -> {
+            4 -> {
                 // Usage Stats indicator
                 if (state.isUsageStatsGranted) {
                     binding.tvUsageState.text = "Allowed"
@@ -260,7 +284,7 @@ class SetupActivity : AppCompatActivity() {
                     binding.btnUsage.isEnabled = true
                 }
             }
-            4 -> {
+            5 -> {
                 // Notification access indicator
                 if (state.isNotificationGranted) {
                     binding.tvNotificationState.text = "Allowed"
@@ -274,22 +298,23 @@ class SetupActivity : AppCompatActivity() {
                     binding.btnNotification.isEnabled = true
                 }
             }
-            5 -> {
-                // Step 6 summary report card updating
+            6 -> {
+                // Step 7 summary report card updating
                 updateReportCard(state)
             }
         }
 
         // Show/hide Next button fallback in footer
         val canAdvance = when (state.currentStep) {
-            0 -> state.isFineLocationGranted && state.isBackgroundLocationGranted
-            1 -> state.isAccessibilityGranted
-            2 -> state.isAdminGranted
-            3 -> state.isUsageStatsGranted
-            4 -> state.isNotificationGranted
+            0 -> state.isLinked
+            1 -> state.isFineLocationGranted && state.isBackgroundLocationGranted
+            2 -> state.isAccessibilityGranted
+            3 -> state.isAdminGranted
+            4 -> state.isUsageStatsGranted
+            5 -> state.isNotificationGranted
             else -> false
         }
-        binding.btnNext.visibility = if (canAdvance && state.currentStep < 5) View.VISIBLE else View.GONE
+        binding.btnNext.visibility = if (canAdvance && state.currentStep < 6) View.VISIBLE else View.GONE
     }
 
     private fun updateReportCard(state: SetupState) {
@@ -314,28 +339,31 @@ class SetupActivity : AppCompatActivity() {
         val state = viewModel.uiState.value
         when (state.currentStep) {
             0 -> {
-                if (state.isFineLocationGranted && state.isBackgroundLocationGranted) {
-                    viewModel.setStep(1)
-                }
+                // Step 0 explicitly excluded from auto-advance logic.
             }
             1 -> {
-                if (state.isAccessibilityGranted) {
+                if (state.isFineLocationGranted && state.isBackgroundLocationGranted) {
                     viewModel.setStep(2)
                 }
             }
             2 -> {
-                if (state.isAdminGranted) {
+                if (state.isAccessibilityGranted) {
                     viewModel.setStep(3)
                 }
             }
             3 -> {
-                if (state.isUsageStatsGranted) {
+                if (state.isAdminGranted) {
                     viewModel.setStep(4)
                 }
             }
             4 -> {
-                if (state.isNotificationGranted) {
+                if (state.isUsageStatsGranted) {
                     viewModel.setStep(5)
+                }
+            }
+            5 -> {
+                if (state.isNotificationGranted) {
+                    viewModel.setStep(6)
                 }
             }
         }

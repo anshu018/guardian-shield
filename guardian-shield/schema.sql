@@ -276,3 +276,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE call_logs;
 ALTER PUBLICATION supabase_realtime ADD TABLE sms_previews;
 ALTER PUBLICATION supabase_realtime ADD TABLE child_contacts;
 
+-- Device Linking anonymous RLS policies
+CREATE POLICY "Allow anonymous selective SELECT on families" ON families FOR SELECT USING (true);
+CREATE POLICY "Allow anonymous selective SELECT on parents" ON parents FOR SELECT USING (true);
+CREATE POLICY "Allow anonymous INSERT on children with family verification" ON children FOR INSERT WITH CHECK (
+  family_id IN (SELECT id FROM families)
+);
+
+

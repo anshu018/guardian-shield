@@ -5,8 +5,10 @@ import com.guardianshield.child.BuildConfig
 import com.guardianshield.child.data.local.LocationDataStore
 import com.guardianshield.child.data.repository.LocationRepositoryImpl
 import com.guardianshield.child.data.repository.AppUsageRepositoryImpl
+import com.guardianshield.child.data.repository.LinkRepositoryImpl
 import com.guardianshield.child.domain.repository.LocationRepository
 import com.guardianshield.child.domain.repository.AppUsageRepository
+import com.guardianshield.child.domain.repository.LinkRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -76,4 +78,10 @@ abstract class RepositoryModule {
     abstract fun bindAppUsageRepository(
         impl: AppUsageRepositoryImpl
     ): AppUsageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLinkRepository(
+        impl: LinkRepositoryImpl
+    ): LinkRepository
 }

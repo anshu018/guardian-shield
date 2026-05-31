@@ -72,8 +72,8 @@ A robust, multi-layer development roadmap for the dual-app native Android ecosys
 - **Status**: `[COMPLETE]`
 - **Goal**: Build the 6-step runtime permission flow, Accessibility service guidance, Device Admin activation, and stealth launcher hiding.
 
-### 🔲 L16 - Device Linking
-- **Status**: `[TODO]`
+### ✅ L16 - Device Linking
+- **Status**: `[COMPLETE]`
 - **Goal**: Implement a 6-digit UPI-style linking pin generator and validator inside Jetpack DataStore.
 
 ### 🔲 L17 - Real Device Testing

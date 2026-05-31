@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 sealed class DashboardUiState {
     object Loading : DashboardUiState()
-    object Empty : DashboardUiState()
+    data class Empty(val familyCode: String) : DashboardUiState()
     data class Success(val children: List<Child>, val selectedChild: Child) : DashboardUiState()
     data class Error(val message: String) : DashboardUiState()
 }
@@ -43,23 +43,20 @@ class DashboardViewModel @Inject constructor(
     fun loadDashboard() {
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
-            val familyId = parentDataStore.getFamilyId()
-            if (familyId == null) {
-                parentRepository.fetchAndCacheFamilyId()
-                    .onSuccess { startMonitoring() }
-                    .onFailure { _uiState.value = DashboardUiState.Error(it.message ?: "Failed to load family credentials.") }
-            } else {
-                startMonitoring()
-            }
+            parentRepository.getOrCreateFamilyCode()
+                .onSuccess { familyCode ->
+                    startMonitoring(familyCode)
+                }
+                .onFailure { _uiState.value = DashboardUiState.Error(it.message ?: "Failed to load family credentials.") }
         }
     }
 
-    private fun startMonitoring() {
+    private fun startMonitoring(familyCode: String) {
         childrenCollectJob?.cancel()
         childrenCollectJob = viewModelScope.launch {
             parentRepository.observeChildren().collect { children ->
                 if (children.isEmpty()) {
-                    _uiState.value = DashboardUiState.Empty
+                    _uiState.value = DashboardUiState.Empty(familyCode)
                 } else {
                     val currentSuccess = _uiState.value
                     val previouslySelectedId = if (currentSuccess is DashboardUiState.Success) {

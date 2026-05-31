@@ -4,6 +4,7 @@ import com.guardianshield.parent.data.local.ParentDataStore
 import com.guardianshield.parent.data.remote.dto.ChildDto
 import com.guardianshield.parent.data.remote.dto.ChildLocationDto
 import com.guardianshield.parent.data.remote.dto.ParentDto
+import com.guardianshield.parent.data.remote.dto.FamilyDto
 import com.guardianshield.parent.domain.models.Child
 import com.guardianshield.parent.domain.models.ChildLocation
 import com.guardianshield.parent.domain.models.RemoteCommand
@@ -61,6 +62,73 @@ class ParentRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun getOrCreateFamilyCode(): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val userId = supabaseClient.auth.currentSessionOrNull()?.user?.id
+                ?: return@withContext Result.failure(Exception("Session invalid. Log in again."))
+
+            val parentDto = supabaseClient.postgrest.from("parents")
+                .select {
+                    filter {
+                        eq("user_id", userId)
+                    }
+                }.decodeSingleOrNull<ParentDto>()
+
+            if (parentDto != null) {
+                val familyDto = supabaseClient.postgrest.from("families")
+                    .select {
+                        filter {
+                            eq("id", parentDto.familyId)
+                        }
+                    }.decodeSingleOrNull<FamilyDto>()
+
+                if (familyDto != null) {
+                    dataStore.saveFamilyId(parentDto.familyId)
+                    dataStore.setLoggedIn(true)
+                    return@withContext Result.success(familyDto.familyCode)
+                } else {
+                    return@withContext Result.failure(Exception("Linked family record not found."))
+                }
+            }
+
+            var attempts = 0
+            var generatedCode = ""
+            var familyId = ""
+
+            while (attempts < 5) {
+                generatedCode = (100000..999999).random().toString()
+                try {
+                    val familyInsert = FamilyDto(familyCode = generatedCode)
+                    val insertedFamily = supabaseClient.postgrest.from("families")
+                        .insert(familyInsert) {
+                            select()
+                        }.decodeSingle<FamilyDto>()
+                    familyId = insertedFamily.id ?: throw Exception("Family UUID is null")
+                    break
+                } catch (e: Exception) {
+                    attempts++
+                    if (attempts >= 5) throw e
+                }
+            }
+
+            val userPhone = supabaseClient.auth.currentSessionOrNull()?.user?.phone ?: "+919876543210"
+            val newParent = ParentDto(
+                userId = userId,
+                familyId = familyId,
+                name = "Parent",
+                phone = userPhone
+            )
+            supabaseClient.postgrest.from("parents").insert(newParent)
+
+            dataStore.saveFamilyId(familyId)
+            dataStore.setLoggedIn(true)
+
+            Result.success(generatedCode)
+        } catch (e: Exception) {
+            Result.failure(Exception("Failed to get or create family linking code: ${e.localizedMessage}", e))
         }
     }
 

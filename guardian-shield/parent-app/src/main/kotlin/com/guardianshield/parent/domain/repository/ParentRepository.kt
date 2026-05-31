@@ -16,6 +16,7 @@ interface ParentRepository {
     fun observeCommands(childId: String): Flow<List<RemoteCommand>>
     
     suspend fun fetchAndCacheFamilyId(): Result<String>
+    suspend fun getOrCreateFamilyCode(): Result<String>
     fun observeChildLocationHistory(childId: String): Flow<List<ChildLocation>>
     
     fun observeCallLogs(childId: String, limit: Int = 50): Flow<List<CallLog>>

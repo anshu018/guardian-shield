@@ -33,7 +33,7 @@
                 android:id="@+id/tvStepIndicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Step 1 of 6"
+                android:text="Step 1 of 7"
                 android:textSize="14sp"
                 android:textColor="@color/text_secondary"
                 android:layout_marginBottom="12dp"/>
@@ -44,18 +44,164 @@
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="6dp"
-                android:max="6"
+                android:max="7"
                 android:progress="1"
                 android:progressTint="@color/primary"
                 android:progressBackgroundTint="@color/card_background"/>
         </LinearLayout>
 
-        <!-- ViewFlipper to navigate smoothly between the 6 steps -->
+        <!-- ViewFlipper to navigate smoothly between the 7 steps -->
         <ViewFlipper
             android:id="@+id/viewFlipper"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
+            <!-- STEP 0: Device Linking -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Link Device"
+                    android:textSize="24sp"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pair this child device with your parent's Guardian Shield dashboard using the secure 6-digit family PIN."
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginBottom="24dp"/>
+
+                <!-- Card for Family PIN Input -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1. Family PIN"
+                            android:textSize="15sp"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp"/>
+
+                        <EditText
+                            android:id="@+id/etPin"
+                            android:layout_width="match_parent"
+                            android:layout_height="54dp"
+                            android:hint="Enter 6-digit PIN"
+                            android:textColorHint="@color/text_muted"
+                            android:textColor="@color/text_primary"
+                            android:inputType="number"
+                            android:maxLength="6"
+                            android:gravity="center"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.3"
+                            android:backgroundTint="@color/primary"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Card for Child Info Input -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardElevation="0dp"
+                    android:layout_marginBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2. Child Profile"
+                            android:textSize="15sp"
+                            android:textColor="@color/text_primary"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="12dp"/>
+
+                        <EditText
+                            android:id="@+id/etChildName"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:hint="Child's Name (e.g., Aarav)"
+                            android:textColorHint="@color/text_muted"
+                            android:textColor="@color/text_primary"
+                            android:inputType="textPersonName"
+                            android:layout_marginBottom="12dp"
+                            android:backgroundTint="@color/primary"/>
+
+                        <EditText
+                            android:id="@+id/etChildAge"
+                            android:layout_width="match_parent"
+                            android:layout_height="50dp"
+                            android:hint="Child's Age (e.g., 8)"
+                            android:textColorHint="@color/text_muted"
+                            android:textColor="@color/text_primary"
+                            android:inputType="number"
+                            android:maxLength="2"
+                            android:backgroundTint="@color/primary"/>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Linking Error TextView -->
+                <TextView
+                    android:id="@+id/tvLinkingError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/indicator_red"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone"/>
+
+                <!-- Loading Indicator -->
+                <ProgressBar
+                    android:id="@+id/progressLinking"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:indeterminateTint="@color/primary"
+                    android:visibility="gone"/>
+
+                <Button
+                    android:id="@+id/btnLink"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:text="Link with Family"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/primary"
+                    android:textColor="@color/text_primary"/>
+            </LinearLayout>
 
             <!-- STEP 1: Location Permission -->
             <LinearLayout

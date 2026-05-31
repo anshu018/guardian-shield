@@ -42,6 +42,7 @@ class LocationDataStore @Inject constructor(
         val LAST_CALL_SYNC = longPreferencesKey("last_call_sync")
         val LAST_SMS_SYNC = longPreferencesKey("last_sms_sync")
         val LAST_CONTACTS_SYNC = longPreferencesKey("last_contacts_sync")
+        val LINKING_PIN = stringPreferencesKey("linking_pin")
     }
 
     suspend fun saveLastKnownLocation(location: ChildLocation) {
@@ -188,5 +189,21 @@ class LocationDataStore @Inject constructor(
 
     suspend fun getLastContactsSync(): Long {
         return context.dataStore.data.map { it[LAST_CONTACTS_SYNC] }.first() ?: 0L
+    }
+
+    suspend fun saveChildId(id: String) {
+        context.dataStore.edit { it[CHILD_ID] = id }
+    }
+
+    suspend fun getChildId(): String? {
+        return context.dataStore.data.map { it[CHILD_ID] }.first()
+    }
+
+    suspend fun saveLinkingPin(pin: String) {
+        context.dataStore.edit { it[LINKING_PIN] = pin }
+    }
+
+    suspend fun getLinkingPin(): String? {
+        return context.dataStore.data.map { it[LINKING_PIN] }.first()
     }
 }

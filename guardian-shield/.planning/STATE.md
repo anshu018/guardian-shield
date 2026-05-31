@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** Realtime child safety monitoring that stays alive on ₹8,000 Android phones, operates seamlessly in low-internet settings, and ensures direct parent-child P2P connectivity.
-**Current focus:** Layer 16: Device Linking (6-digit UPI-style PIN sync)
+**Current focus:** Layer 17: Validation Testing
 
 ## Current Position
 
 Phase: 5 of 5 (Production Hardening & Setup)
-Current Layer: L16
-Active Task: "Device Linking — 6-digit UPI-style PIN sync"
-Status: Ready to execute
-Last activity: 2026-05-31 — Layer 15 (Setup Wizard) completed successfully.
+Current Layer: L17
+Active Task: "Validation Testing"
+Status: In Progress
+Last activity: 2026-05-31 — Layer 16 (Device Linking) completed successfully.
 
-Progress: [█████████░] 88% (15 of 17 layers complete)
+Progress: [██████████] 94% (16 of 17 layers complete)
 
 ## Completed Layers (L0 - L15)
 
@@ -38,8 +38,8 @@ Progress: [█████████░] 88% (15 of 17 layers complete)
 
 ## Remaining Layers (L16 - L17)
 
-*   **Layer 16: Device Linking** — `[TODO]`
-*   **Layer 17: Validation Testing** — `[TODO]`
+*   **Layer 16: Device Linking** — `[SUCCESS]`
+*   **Layer 17: Validation Testing** — `[IN_PROGRESS]`
 
 ## Performance Metrics
 
@@ -56,7 +56,7 @@ Progress: [█████████░] 88% (15 of 17 layers complete)
 | Phase 3: Core Monitoring & Local Enforcement | 2 | 2 | Complete |
 | Phase 4: Low-Latency Signaling & WebRTC | 2 | 2 | Complete |
 | Phase 5: Parent Dashboard & Real-Time monitoring | 4 | 4 | Complete |
-| Phase 6: Emergency UI & Device Linking | 1 | 4 | 25% |
+| Phase 6: Emergency UI & Device Linking | 2 | 4 | 50% |
 
 ---
 

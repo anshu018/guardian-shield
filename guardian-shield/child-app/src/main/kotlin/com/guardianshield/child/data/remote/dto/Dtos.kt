@@ -47,8 +47,17 @@ data class RemoteCommandDto(
 
 @Serializable
 data class FamilyDto(
-    val id: String,
+    val id: String? = null,
     @SerialName("family_code") val familyCode: String
+)
+
+@Serializable
+data class ParentDto(
+    val id: String? = null,
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("family_id") val familyId: String,
+    val name: String = "",
+    val phone: String
 )
 
 @Serializable

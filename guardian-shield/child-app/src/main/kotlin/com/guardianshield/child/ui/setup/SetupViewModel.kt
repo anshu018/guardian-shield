@@ -19,6 +19,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.guardianshield.child.admin.GuardianDeviceAdminReceiver
 import com.guardianshield.child.data.local.LocationDataStore
+import com.guardianshield.child.domain.usecases.LinkDeviceUseCase
 import com.guardianshield.child.services.AppMonitorService
 import com.guardianshield.child.services.EmergencySOSService
 import com.guardianshield.child.services.GuardianAccessibilityService
@@ -40,13 +41,17 @@ data class SetupState(
     val isAccessibilityGranted: Boolean = false,
     val isAdminGranted: Boolean = false,
     val isUsageStatsGranted: Boolean = false,
-    val isNotificationGranted: Boolean = false
+    val isNotificationGranted: Boolean = false,
+    val isLinked: Boolean = false,
+    val isLinkingLoading: Boolean = false,
+    val linkingError: String? = null
 )
 
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val dataStore: LocationDataStore
+    private val dataStore: LocationDataStore,
+    private val linkDeviceUseCase: LinkDeviceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SetupState())
@@ -87,15 +92,60 @@ class SetupViewModel @Inject constructor(
     }
 
     fun setStep(step: Int) {
-        if (step in 0..5) {
+        if (step in 0..6) {
             _uiState.value = _uiState.value.copy(currentStep = step)
         }
     }
 
     fun nextStep() {
         val next = _uiState.value.currentStep + 1
-        if (next <= 5) {
+        if (next <= 6) {
             setStep(next)
+        }
+    }
+
+    fun linkDevice(pin: String, name: String, ageStr: String) {
+        val cleanPin = pin.trim()
+        val cleanName = name.trim()
+        val cleanAgeStr = ageStr.trim()
+
+        if (cleanPin.length != 6 || !cleanPin.all { it.isDigit() }) {
+            _uiState.value = _uiState.value.copy(linkingError = "Please enter a valid 6-digit numeric Family PIN.")
+            return
+        }
+
+        if (cleanName.isBlank()) {
+            _uiState.value = _uiState.value.copy(linkingError = "Please enter the child's name.")
+            return
+        }
+
+        val age = cleanAgeStr.toIntOrNull()
+        if (age == null || age < 1 || age > 17) {
+            _uiState.value = _uiState.value.copy(linkingError = "Please enter a valid age between 1 and 17.")
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(
+            isLinkingLoading = true,
+            linkingError = null
+        )
+
+        viewModelScope.launch {
+            linkDeviceUseCase(cleanPin, cleanName, age)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        isLinked = true,
+                        isLinkingLoading = false,
+                        linkingError = null,
+                        currentStep = 1 // Automatically advance to Step 1 (Location Permission)
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        isLinkingLoading = false,
+                        linkingError = it.message ?: "Failed to link device. Please try again."
+                    )
+                }
         }
     }
 
