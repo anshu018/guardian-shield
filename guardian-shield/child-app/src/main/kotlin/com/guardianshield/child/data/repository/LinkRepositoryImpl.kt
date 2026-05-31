@@ -8,6 +8,12 @@ import com.guardianshield.child.domain.models.ChildLocation
 import com.guardianshield.child.domain.repository.LinkRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.functions.functions
+import io.ktor.client.call.body
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -32,16 +38,23 @@ class LinkRepositoryImpl @Inject constructor(
                     return@withContext Result.success(childId)
                 }
 
-                // 1. Query families WHERE family_code matches the PIN
-                val family = supabaseClient.postgrest.from("families")
-                    .select {
-                        filter {
-                            eq("family_code", pin)
-                        }
-                    }.decodeSingleOrNull<FamilyDto>()
-                    ?: return@withContext Result.failure(Exception("Invalid code. Ask the parent to check their app."))
+                // 1. Invoke the secure register-child Edge Function
+                val response = supabaseClient.functions.invoke(
+                    function = "register-child",
+                    body = buildJsonObject {
+                        put("family_code", pin)
+                        put("name", name)
+                        put("age", age)
+                    }
+                )
 
-                val familyId = family.id ?: return@withContext Result.failure(Exception("Registered family is missing a valid identifier."))
+                val registerData = response.body<RegisterChildResponse>()
+                if (!registerData.success) {
+                    return@withContext Result.failure(Exception("Registration failed: secure function reported failure."))
+                }
+
+                val childId = registerData.childId
+                val familyId = registerData.familyId
 
                 // 2. Query parents WHERE family_id matches the family
                 val parent = supabaseClient.postgrest.from("parents")
@@ -53,21 +66,7 @@ class LinkRepositoryImpl @Inject constructor(
 
                 val parentPhone = parent?.phone ?: "+919876543210"
 
-                // 3. Insert new row into children
-                val newChild = ChildDto(
-                    familyId = familyId,
-                    name = name,
-                    age = age,
-                    phone = ""
-                )
-                val insertedChild = supabaseClient.postgrest.from("children")
-                    .insert(newChild) {
-                        select()
-                    }.decodeSingle<ChildDto>()
-
-                val childId = insertedChild.id ?: return@withContext Result.failure(Exception("Failed to register child profile on database."))
-
-                // 4. Persist child_id, parent_phone, and linking_pin to DataStore
+                // 3. Persist child_id, parent_phone, and linking_pin to DataStore
                 dataStore.saveFamilyId(familyId)
                 dataStore.saveChildId(childId)
                 dataStore.saveParentPhone(parentPhone)
@@ -92,3 +91,10 @@ class LinkRepositoryImpl @Inject constructor(
             }
         }
 }
+
+@Serializable
+data class RegisterChildResponse(
+    val success: Boolean,
+    @SerialName("child_id") val childId: String,
+    @SerialName("family_id") val familyId: String
+)

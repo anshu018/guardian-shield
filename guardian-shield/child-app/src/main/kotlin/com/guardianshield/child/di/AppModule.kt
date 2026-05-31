@@ -22,6 +22,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.functions.Functions
 import javax.inject.Singleton
 
 @Module
@@ -43,6 +44,7 @@ object AppModule {
             }
             install(Postgrest)
             install(Realtime)
+            install(Functions)
         }
     }
 
