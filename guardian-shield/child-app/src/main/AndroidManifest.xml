@@ -35,6 +35,8 @@
     <!-- Dialer intercept for secret re-entry -->
     <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".GuardianChildApp"
         android:allowBackup="false"

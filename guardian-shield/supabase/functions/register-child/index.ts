@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/x/sift@0.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
@@ -16,8 +15,8 @@ serve(async (req) => {
   }
 
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   const { data: family, error: familyError } = await supabase
@@ -35,11 +34,7 @@ serve(async (req) => {
 
   const { data: child, error: childError } = await supabase
     .from("children")
-    .insert({
-      family_id: family.id,
-      name: name,
-      age: age
-    })
+    .insert({ family_id: family.id, name: name, age: age })
     .select()
     .single();
 
