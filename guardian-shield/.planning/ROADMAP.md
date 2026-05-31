@@ -2,97 +2,80 @@
 
 ## Overview
 
-A robust, 5-phase execution roadmap designed to build, secure, and validate a highly resilient child monitoring system. The execution focuses first on the critical background layer (ensuring battery recovery on cheap OEM ROMs), followed by realtime mapping integration, P2P WebRTC ambient checks, zero-connectivity SMS fallbacks, and production-grade security constraints.
+A robust, multi-layer development roadmap for the dual-app native Android ecosystem (Parent App & Child App) built using Kotlin, Clean Architecture, and Supabase. The system is designed to provide real-time location tracking, offline SOS fallbacks, and low-latency P2P ambient streaming, specifically optimized to survive on budget Android devices.
 
 ---
 
-## Phases
+## Development Layers (L0 to L17)
 
-- [ ] **Phase 1: Service Survival & Foundation** - Make services completely bulletproof on aggressive Indian OEM devices (Xiaomi, Realme, Vivo).
-- [ ] **Phase 2: Location Tracking & Supabase Auth** - Realtime location tracking on OSMDroid with secure Supabase Phone OTP.
-- [ ] **Phase 3: WebRTC P2P Ambient Check** - Ambient audio/video monitoring over low-bandwidth constraints (<500KB/s).
-- [ ] **Phase 4: Offline SOS Fallback** - SmsManager signaling for direct broadcast when cellular data is disconnected.
-- [ ] **Phase 5: Production Hardening & ProGuard** - DeviceAdmin integration, app stealth mode, and <8MB APK optimization.
+### ✅ L0 - Documentation
+- **Status**: `[COMPLETE]`
+- **Goal**: Establish the PRD, architecture definitions, WebRTC streaming design, and database schemas.
 
----
+### ✅ L1 - Project Scaffold
+- **Status**: `[COMPLETE]`
+- **Goal**: Set up dual-app modules (`:child-app` and `:parent-app`), Hilt dependency injection, KSP, and gradle build structures. Both apps build successfully.
 
-## Phase Details
+### ✅ L2 - DB Schema & Supabase Auth
+- **Status**: `[COMPLETE]`
+- **Goal**: Configure Supabase client, tables (`families`, `parents`, `children`, etc.), RLS policies, and Phone OTP auth login flows.
 
-### Phase 1: Service Survival & Foundation
-**Goal**: Ensure Child foreground services remain sticky, recover automatically from task kills, and run periodic watchdogs.
-**Depends on**: Nothing
-**Requirements**: REQ-01 (Service Survival Watchdog)
-**Success Criteria**:
-  1. Child foreground service automatically restarts within 5 seconds of parent task removal.
-  2. BootReceiver triggers on both `BOOT_COMPLETED` and `QUICKBOOT_POWERON`.
-  3. WorkManager watchdog runs a connectivity and service alive check every 15 minutes.
-**Plans**: 2 plans
+### ✅ L3 - GPS Telemetry
+- **Status**: `[COMPLETE]`
+- **Goal**: Build `LocationTrackingService` with background GPS polling and DataStore offline coordinate caching.
 
-Plans:
-- [ ] 01-01: Implement BootReceiver, Sticky Foreground Service, and AlarmManager restart loop.
-- [ ] 01-02: Implement WorkManager watchdog worker and Service survival status checker.
+### ✅ L4 - Background Service Survival
+- **Status**: `[COMPLETE]`
+- **Goal**: Implement the 3-layer foreground service watchdog system (sticky intents, AlarmManager restarts, WorkManager connectivity checks).
 
-### Phase 2: Location Tracking & Supabase Auth
-**Goal**: Build parents' auth gateway and render Child's realtime location coordinates on parent's maps.
-**Depends on**: Phase 1
-**Requirements**: REQ-02, REQ-03
-**Success Criteria**:
-  1. Parent logins successfully via Supabase Phone OTP auth.
-  2. Child app polls GPS and streams location to Supabase with adaptive interval (10s normal / 30s stationary).
-  3. Parent app renders child's geofences and path on OSMDroid map views.
-**Plans**: 2 plans
+### ✅ L5 - Device Admin
+- **Status**: `[COMPLETE]`
+- **Goal**: Integrate `DeviceAdminReceiver` inside the child app manifest to enforce remote lock and block uninstallation.
 
-Plans:
-- [ ] 02-01: Integrate Supabase Phone OTP authentication UI and repository layer.
-- [ ] 02-02: Configure OSMDroid map view and geofence tracking with adaptive location polling.
+### ✅ L6 - App Monitor Service
+- **Status**: `[COMPLETE]`
+- **Goal**: Poll foreground package names via `UsageStatsManager` and overlay parental lock screens on blocked apps.
 
-### Phase 3: WebRTC P2P Ambient Check
-**Goal**: Set up ambient audio/video check using direct peer-to-peer streaming.
-**Depends on**: Phase 2
-**Requirements**: REQ-04
-**Success Criteria**:
-  1. Parent app initiates an ambient check, sending signaling message via Node.js Railway server.
-  2. Child app grabs screen/camera via MediaProjection and streams over WebRTC.
-  3. WebRTC stream runs smoothly under a target bandwidth limit of 500KB/s.
-**Plans**: 2 plans
+### ✅ L7 - Emergency SOS Engine
+- **Status**: `[COMPLETE]`
+- **Goal**: Implement low-battery location polling, stationary detection algorithm, and encrypted SMS fallback transmission.
 
-Plans:
-- [ ] 03-01: Deploy Signaling server and configure WebRTC handshake client interfaces.
-- [ ] 03-02: Build ambient video and audio P2P projection streaming.
+### ✅ L8 - WebRTC Signaling
+- **Status**: `[COMPLETE]`
+- **Goal**: Establish connection handshake through Railway.app Node.js Socket.io signaling server.
 
-### Phase 4: Offline SOS Fallback
-**Goal**: Broadcast SMS alerts when cellular data connectivity drops to 0%.
-**Depends on**: Phase 3
-**Requirements**: REQ-05
-**Success Criteria**:
-  1. Child app detects internet disconnection.
-  2. Pressing Child SOS button broadcasts SMS with last known geocoordinates to registered Parent phone numbers.
-**Plans**: 1 plan
+### ✅ L9 - ScreenCaptureService
+- **Status**: `[COMPLETE]`
+- **Goal**: Implement custom WebRTC VideoCapturer using `AccessibilityService.takeScreenshot()` for permanent, silent screen streaming without MediaProjection.
 
-Plans:
-- [ ] 04-01: Implement SmsManager broadcasting and automated connection-drop detection.
+### ✅ L10 - Parent OSMDroid Live Map
+- **Status**: `[COMPLETE]`
+- **Goal**: Integrate offline OSMDroid maps inside the parent app to render real-time geofence circles and movement trails.
 
-### Phase 5: Production Hardening & ProGuard
-**Goal**: Enforce extreme stealth and security features to prevent child uninstalls and limit APK size.
-**Depends on**: Phase 4
-**Success Criteria**:
-  1. Child app sets DeviceAdmin uninstall blockage requiring parent PIN to deactivate.
-  2. Child app icon is hidden from launcher list after initial registration.
-  3. ProGuard minimizes final child APK size to under 8MB.
-**Plans**: 2 plans
+### ✅ L11 - Parent WebRTC Live Screen Viewer
+- **Status**: `[COMPLETE]`
+- **Goal**: Embed WebRTC `SurfaceViewRenderer` in parent dashboard with adaptive bitrate controls and Open Relay TURN configurations.
 
-Plans:
-- [ ] 05-01: Build DeviceAdminReceiver, launcher component deactivation, and PIN validation.
-- [ ] 05-02: Optimize assets, configure ProGuard rules, and verify final build size.
+### ✅ L12 - Monitoring Tab
+- **Status**: `[COMPLETE]`
+- **Goal**: Securely query child call logs, SMS previews, contacts list, and today's app usage graphs.
 
----
+### ✅ L13 - Remote Controls Panel
+- **Status**: `[COMPLETE]`
+- **Goal**: Add controls to trigger remote LOCK, Siren Alarm, App Blocks, and Toast Messages.
 
-## Progress
+### ✅ L14 - Emergency SOS Alert Activity
+- **Status**: `[COMPLETE]`
+- **Goal**: Create lockscreen-override full-screen SOS activity in the parent app with a looping siren alarm.
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Service Survival | 0/2 | Not started | - |
-| 2. Location Tracking | 0/2 | Not started | - |
-| 3. WebRTC Ambient Check | 0/2 | Not started | - |
-| 4. Offline SOS Fallback | 0/1 | Not started | - |
-| 5. Production Hardening | 0/2 | Not started | - |
+### ✅ L15 - Setup Wizard
+- **Status**: `[COMPLETE]`
+- **Goal**: Build the 6-step runtime permission flow, Accessibility service guidance, Device Admin activation, and stealth launcher hiding.
+
+### 🔲 L16 - Device Linking
+- **Status**: `[TODO]`
+- **Goal**: Implement a 6-digit UPI-style linking pin generator and validator inside Jetpack DataStore.
+
+### 🔲 L17 - Real Device Testing
+- **Status**: `[TODO]`
+- **Goal**: Run end-to-end telemetry field testing and measure device battery impact.

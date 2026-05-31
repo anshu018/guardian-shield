@@ -117,3 +117,51 @@
 - Never use Java — Kotlin only
 - Never skip the persistent foreground notification on services
 - Never use hardcoded Supabase credentials in source files
+
+---
+
+## GSD MANDATORY PROTOCOL — EVERY SESSION MUST FOLLOW THIS EXACTLY:
+
+### STEP 1 — SESSION START (before ANY code work):
+  a. Run: `node C:/Users/ash74/.gemini/get-shit-done/bin/gsd-tools.cjs state load`
+  b. Read `.planning/STATE.md` to know current layer
+  c. Read `.planning/ROADMAP.md` to know what is done
+  d. Read `.agent_roadmap.md` for full layer details
+  e. Confirm current layer out loud before proceeding
+  f. NEVER assume anything is done — always read state files first
+
+### STEP 2 — BEFORE EACH TASK:
+  a. Use GSD to create a task checklist for the current layer
+  b. Break the layer into subtasks — one file per subtask
+  c. Mark each subtask `[IN_PROGRESS]` before starting it
+  d. Never start the next subtask until current one is verified
+
+### STEP 3 — AFTER EACH FILE IS WRITTEN:
+  a. Run: `Get-Content [filepath] | Select-Object -First 5`
+  b. Confirm file exists on real disk with correct content
+  c. Mark that subtask `[COMPLETE]` in GSD
+  d. Only then move to next subtask
+
+### STEP 4 — AFTER LAYER IS COMPLETE:
+  a. Run both:
+     ```powershell
+     ./gradlew :child-app:assembleDebug
+     ./gradlew :parent-app:assembleDebug
+     ```
+  b. Both must show `BUILD SUCCESSFUL`
+  c. Update `.planning/STATE.md` — mark layer as `[COMPLETE]`
+  d. Update `.planning/ROADMAP.md` — tick the layer ✅
+  e. Update `.agent_roadmap.md` — mark layer `SUCCESS`
+  f. Git commit: `git commit -m "L[N]: [description]"`
+  g. Git push
+  h. Announce: "Layer [N] complete. GSD updated. Ready for L[N+1]."
+
+### STEP 5 — SESSION END:
+  a. Update `STATE.md` with exact progress
+  b. Note any blockers or open questions
+  c. Never leave GSD out of sync with reality
+
+**GSD IS NOT OPTIONAL. GSD RUNS FIRST. ALWAYS.**
+If GSD shows wrong state, fix GSD before writing any code.
+A wrong GSD is worse than no GSD.
+

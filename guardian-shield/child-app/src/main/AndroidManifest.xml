@@ -56,6 +56,7 @@
         <activity
             android:name=".ui.setup.SetupActivity"
             android:excludeFromRecents="true"
+            android:theme="@style/Theme.SetupWizard"
             android:exported="false" />
 
         <activity
