@@ -170,7 +170,7 @@ class ParentRepositoryImpl @Inject constructor(
                 name = dto.name,
                 isOnline = lastLoc?.let { System.currentTimeMillis() - it.timestamp < 30_000 } ?: false,
                 lastLocation = lastLoc,
-                phone = dto.phone
+                phone = dto.phone ?: ""
             )
         }
 

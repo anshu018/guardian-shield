@@ -47,7 +47,7 @@ data class ChildDto(
     @SerialName("family_id") val familyId: String,
     val name: String,
     val age: Int,
-    val phone: String = ""
+    val phone: String? = null
 )
 
 @Serializable
