@@ -5,19 +5,19 @@
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** Realtime child safety monitoring that stays alive on ₹8,000 Android phones, operates seamlessly in low-internet settings, and ensures direct parent-child P2P connectivity.
-**Current focus:** Layer 17: Validation Testing
+**Current focus:** Layer 17: Validation Testing & Funtouch OS Bugfixes
 
 ## Current Position
 
 Phase: 5 of 5 (Production Hardening & Setup)
 Current Layer: L17
-Active Task: "Validation Testing"
-Status: In Progress
-Last activity: 2026-05-31 — Layer 16 (Device Linking) completed successfully.
+Active Task: "Validation Testing & Funtouch OS Bugfixes"
+Status: Complete
+Last activity: 2026-06-01 — Layer 17 (Validation Testing & Real Device Bugfixes) completed successfully. Both builds compile clean.
 
-Progress: [██████████] 94% (16 of 17 layers complete)
+Progress: [██████████] 100% (17 of 17 layers complete)
 
-## Completed Layers (L0 - L15)
+## Completed Layers (L0 - L17)
 
 *   **Layer 0: Documentation** — `[SUCCESS]`
 *   **Layer 1: Project Scaffold** — `[SUCCESS]`
@@ -35,11 +35,13 @@ Progress: [██████████] 94% (16 of 17 layers complete)
 *   **Layer 13: Remote Commands Panel** — `[SUCCESS]`
 *   **Layer 14: Emergency SOS Alert Activity** — `[SUCCESS]`
 *   **Layer 15: Setup Wizard** — `[SUCCESS]`
+*   **Layer 16: Device Linking** — `[SUCCESS]`
+*   **Layer 17: Validation Testing** — `[SUCCESS]`
 
 ## Remaining Layers (L16 - L17)
 
 *   **Layer 16: Device Linking** — `[SUCCESS]`
-*   **Layer 17: Validation Testing** — `[IN_PROGRESS]`
+*   **Layer 17: Validation Testing** — `[SUCCESS]`
 
 ## Performance Metrics
 

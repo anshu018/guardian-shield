@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.guardianshield.child.utils.ServiceHealthChecker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,6 +16,9 @@ class BootReceiver : BroadcastReceiver() {
             startService(context, LocationTrackingService::class.java)
             startService(context, AppMonitorService::class.java)
             startService(context, EmergencySOSService::class.java)
+            
+            // Additional safety layer for aggressive battery savers
+            ServiceHealthChecker.ensureServicesRunning(context)
         }
     }
 
@@ -27,3 +31,4 @@ class BootReceiver : BroadcastReceiver() {
         }
     }
 }
+
