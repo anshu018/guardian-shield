@@ -44,7 +44,8 @@ data class SetupState(
     val isNotificationGranted: Boolean = false,
     val isLinked: Boolean = false,
     val isLinkingLoading: Boolean = false,
-    val linkingError: String? = null
+    val linkingError: String? = null,
+    val isSetupFinished: Boolean = false
 )
 
 @HiltViewModel
@@ -164,6 +165,9 @@ class SetupViewModel @Inject constructor(
 
             // 4. Disable launcher Activity component to permanently hide it from drawer
             hideLauncherIcon()
+
+            // 5. Signal setup completed
+            _uiState.value = _uiState.value.copy(isSetupFinished = true)
         }
     }
 

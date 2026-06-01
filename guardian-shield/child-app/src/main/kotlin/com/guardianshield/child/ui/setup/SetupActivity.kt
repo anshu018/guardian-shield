@@ -151,13 +151,8 @@ class SetupActivity : AppCompatActivity() {
 
         // Activate Stealth Protection Click
         binding.btnActivate.setOnClickListener {
+            binding.btnActivate.isEnabled = false
             viewModel.completeSetup()
-            Toast.makeText(
-                this,
-                "Stealth Active: Services running, launcher hidden.",
-                Toast.LENGTH_LONG
-            ).show()
-            finish()
         }
 
         // Manual Next Step Fallback Button
@@ -170,6 +165,15 @@ class SetupActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
+                    if (state.isSetupFinished) {
+                        Toast.makeText(
+                            this@SetupActivity,
+                            "Stealth Active: Services running, launcher hidden.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finish()
+                        return@collect
+                    }
                     updateUiState(state)
                 }
             }

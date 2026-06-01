@@ -95,7 +95,11 @@ class LocationTrackingService : Service(), LocationListener {
 
     override fun onLocationChanged(location: Location) {
         serviceScope.launch {
-            val childId = locationDataStore.getLastKnownLocation()?.childId ?: "device_child_1"
+            val childId = locationDataStore.getChildId()
+            if (childId.isNullOrEmpty()) {
+                android.util.Log.e("LocationTrackingService", "Location upload skipped: childId is null or empty in DataStore.")
+                return@launch
+            }
             val batteryPct = getBatteryPercentage()
 
             val childLocation = ChildLocation(
