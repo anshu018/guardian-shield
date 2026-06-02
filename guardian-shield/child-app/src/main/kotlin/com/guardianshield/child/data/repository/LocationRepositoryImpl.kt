@@ -31,27 +31,33 @@ class LocationRepositoryImpl @Inject constructor(
         // Always save last known locally
         locationDataStore.saveLastKnownLocation(location)
 
+        android.util.Log.d("LocationRepository", "Attempting location upload to Supabase: $dto")
         return try {
             // 1. Attempt to upload the current location
             supabaseClient.postgrest.from("child_location").insert(dto)
+            android.util.Log.i("LocationRepository", "Location uploaded successfully to Supabase.")
 
             // 2. If successful, check for any cached offline locations
             val cachedLocations = locationDataStore.getOfflineLocations()
             if (cachedLocations.isNotEmpty()) {
+                android.util.Log.d("LocationRepository", "Uploading ${cachedLocations.size} offline cached locations...")
                 for (cached in cachedLocations) {
                     try {
                         supabaseClient.postgrest.from("child_location").insert(cached)
                     } catch (e: Exception) {
+                        android.util.Log.e("LocationRepository", "Failed to upload offline cached location: ${e.message}")
                         // If uploading a cached point fails, stop batch upload and keep it in cache
                         return Result.success(Unit)
                     }
                 }
                 // Clear cache on successful upload of all items
                 locationDataStore.clearOfflineLocations()
+                android.util.Log.i("LocationRepository", "All offline cached locations uploaded.")
             }
 
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("LocationRepository", "Failed to upload location, caching offline: ${e.message}", e)
             // 3. On failure (e.g. network lost), cache locally
             locationDataStore.saveOfflineLocation(dto)
             Result.failure(e)

@@ -42,7 +42,7 @@ object ServiceHealthChecker {
     
     fun isAccessibilityServiceEnabled(context: Context): Boolean {
         val expectedService = "${context.packageName}/" +
-            "com.guardianshield.child.services.AppMonitorService"
+            "com.guardianshield.child.services.GuardianAccessibilityService"
         val enabledServices = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES

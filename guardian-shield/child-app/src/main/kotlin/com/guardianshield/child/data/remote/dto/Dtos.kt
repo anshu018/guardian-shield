@@ -20,7 +20,7 @@ data class SosEventDto(
     @SerialName("child_id") val childId: String,
     @SerialName("latitude") val lat: Double,
     @SerialName("longitude") val lng: Double,
-    @SerialName("active") val active: Boolean = true,
+    @SerialName("is_active") val active: Boolean = true,
     @SerialName("triggered_at") val triggeredAt: String? = null
 )
 

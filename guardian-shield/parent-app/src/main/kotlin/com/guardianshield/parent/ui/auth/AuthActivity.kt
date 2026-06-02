@@ -28,6 +28,17 @@ class AuthActivity : AppCompatActivity() {
         setupEmailScreen()
         setupOtpScreen()
         observeState()
+
+        lifecycleScope.launch {
+            for (i in 1..30) {
+                if (viewModel.isLoggedIn()) {
+                    startActivity(Intent(this@AuthActivity, MainActivity::class.java))
+                    finish()
+                    break
+                }
+                kotlinx.coroutines.delay(100)
+            }
+        }
     }
 
     private fun setupEmailScreen() {

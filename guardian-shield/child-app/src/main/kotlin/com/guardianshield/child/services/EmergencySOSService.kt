@@ -67,6 +67,7 @@ class EmergencySOSService : Service() {
     private var overlayView: View? = null
 
     private var isSosTriggeredState = false
+    private var isCommandSubscribed = false
 
     override fun onCreate() {
         super.onCreate()
@@ -188,6 +189,8 @@ class EmergencySOSService : Service() {
     }
 
     private fun startCommandSubscription() {
+        if (isCommandSubscribed) return
+        isCommandSubscribed = true
         serviceScope.launch {
             try {
                 val childId = locationDataStore.getLastKnownLocation()?.childId ?: "device_child_1"
@@ -214,6 +217,7 @@ class EmergencySOSService : Service() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                isCommandSubscribed = false
                 delay(10_000L)
                 startCommandSubscription()
             }

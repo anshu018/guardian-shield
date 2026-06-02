@@ -48,6 +48,7 @@ class AppMonitorService : Service() {
     @Inject lateinit var supabaseClient: SupabaseClient
 
     private var lastActivePackage: String? = null
+    private var isRealtimeSubscribed = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(Constants.NOTIFICATION_ID + 1, buildNotification())
@@ -134,10 +135,15 @@ class AppMonitorService : Service() {
     }
 
     private fun startRealtimeSubscription() {
+        if (isRealtimeSubscribed) return
+        isRealtimeSubscribed = true
         serviceScope.launch {
             try {
                 val childIdFromData = dataStore.getLastKnownLocation()?.childId ?: ""
-                if (childIdFromData.isEmpty()) return@launch
+                if (childIdFromData.isEmpty()) {
+                    isRealtimeSubscribed = false
+                    return@launch
+                }
 
                 val channel = supabaseClient.realtime.channel("remote_commands_monitor")
                 val changes = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
@@ -166,6 +172,7 @@ class AppMonitorService : Service() {
                 channel.subscribe()
             } catch (e: Exception) {
                 e.printStackTrace()
+                isRealtimeSubscribed = false
             }
         }
     }

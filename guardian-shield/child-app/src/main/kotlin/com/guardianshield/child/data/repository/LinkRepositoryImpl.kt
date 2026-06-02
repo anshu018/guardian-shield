@@ -9,6 +9,7 @@ import com.guardianshield.child.domain.repository.LinkRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.auth.auth
 import io.ktor.client.call.body
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
@@ -84,6 +85,19 @@ class LinkRepositoryImpl @Inject constructor(
                         timestamp = System.currentTimeMillis()
                     )
                 )
+
+                // Sign in anonymously so the Supabase SDK holds a valid JWT.
+                // This satisfies the authenticated INSERT RLS policies on child_location,
+                // sos_events, app_usage, call_logs, sms_previews, and child_contacts.
+                // The Auth plugin auto-persists the session so services survive restarts.
+                try {
+                    if (supabaseClient.auth.currentSessionOrNull() == null) {
+                        supabaseClient.auth.signInAnonymously()
+                        android.util.Log.i("LinkRepository", "Anonymous Supabase session established for child $childId")
+                    }
+                } catch (authEx: Exception) {
+                    android.util.Log.w("LinkRepository", "Anonymous sign-in failed (non-fatal): ${authEx.message}")
+                }
 
                 Result.success(childId)
             } catch (e: Exception) {

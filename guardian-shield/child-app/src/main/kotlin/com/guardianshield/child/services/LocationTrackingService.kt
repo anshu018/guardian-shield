@@ -36,7 +36,7 @@ class LocationTrackingService : Service(), LocationListener {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var locationManager: LocationManager
 
-    private var currentInterval = Constants.LOCATION_INTERVAL_NORMAL
+    private var currentInterval = -1L
     private var lastLocationsList = mutableListOf<Location>()
     private var isStationaryMode = false
     private var isSosActive = false
@@ -94,6 +94,7 @@ class LocationTrackingService : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
+        android.util.Log.d("LocationTrackingService", "onLocationChanged: lat=${location.latitude}, lng=${location.longitude}, accuracy=${location.accuracy}")
         serviceScope.launch {
             val childId = locationDataStore.getChildId()
             if (childId.isNullOrEmpty()) {
@@ -112,7 +113,12 @@ class LocationTrackingService : Service(), LocationListener {
             )
 
             detectStationaryState(location)
-            locationRepository.uploadLocation(childLocation)
+            val result = locationRepository.uploadLocation(childLocation)
+            if (result.isSuccess) {
+                android.util.Log.i("LocationTrackingService", "Location uploaded successfully for childId: $childId")
+            } else {
+                android.util.Log.e("LocationTrackingService", "Failed to upload location: ${result.exceptionOrNull()?.message}")
+            }
         }
     }
 

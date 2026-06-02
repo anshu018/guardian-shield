@@ -178,35 +178,39 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 3. Subscribe to real-time location inserts/updates via Supabase WebSockets
         val channel = supabaseClient.realtime.channel("child_location_stream")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "child_location"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "child_location"
+            }
+            channel.subscribe()
 
-        val childrenMap = childrenList.associateBy { it.id }.toMutableMap()
+            val childrenMap = childrenList.associateBy { it.id }.toMutableMap()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
-                val record = action.record
-                val locDto = Json.decodeFromJsonElement<ChildLocationDto>(record)
-                
-                if (childrenMap.containsKey(locDto.childId)) {
-                    val updatedLoc = ChildLocation(
-                        childId = locDto.childId,
-                        lat = locDto.lat,
-                        lng = locDto.lng,
-                        battery = locDto.battery,
-                        accuracy = locDto.accuracy,
-                        timestamp = System.currentTimeMillis()
-                    )
-                    val child = childrenMap[locDto.childId]!!
-                    childrenMap[locDto.childId] = child.copy(
-                        lastLocation = updatedLoc,
-                        isOnline = true
-                    )
-                    emit(childrenMap.values.toList())
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                    val record = action.record
+                    val locDto = Json.decodeFromJsonElement<ChildLocationDto>(record)
+                    
+                    if (childrenMap.containsKey(locDto.childId)) {
+                        val updatedLoc = ChildLocation(
+                            childId = locDto.childId,
+                            lat = locDto.lat,
+                            lng = locDto.lng,
+                            battery = locDto.battery,
+                            accuracy = locDto.accuracy,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        val child = childrenMap[locDto.childId]!!
+                        childrenMap[locDto.childId] = child.copy(
+                            lastLocation = updatedLoc,
+                            isOnline = true
+                        )
+                        emit(childrenMap.values.toList())
+                    }
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -236,32 +240,36 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 2. Stream subsequent inserts for this child in real time
         val channel = supabaseClient.realtime.channel("child_history_stream_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "child_location"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "child_location"
+            }
+            channel.subscribe()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert) {
-                val record = action.record
-                val locDto = Json.decodeFromJsonElement<ChildLocationDto>(record)
-                
-                if (locDto.childId == childId) {
-                    val newLoc = ChildLocation(
-                        childId = locDto.childId,
-                        lat = locDto.lat,
-                        lng = locDto.lng,
-                        battery = locDto.battery,
-                        accuracy = locDto.accuracy,
-                        timestamp = System.currentTimeMillis()
-                    )
-                    historyList.add(newLoc)
-                    if (historyList.size > 10) {
-                        historyList.removeAt(0)
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert) {
+                    val record = action.record
+                    val locDto = Json.decodeFromJsonElement<ChildLocationDto>(record)
+                    
+                    if (locDto.childId == childId) {
+                        val newLoc = ChildLocation(
+                            childId = locDto.childId,
+                            lat = locDto.lat,
+                            lng = locDto.lng,
+                            battery = locDto.battery,
+                            accuracy = locDto.accuracy,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        historyList.add(newLoc)
+                        if (historyList.size > 10) {
+                            historyList.removeAt(0)
+                        }
+                        emit(historyList.toList())
                     }
-                    emit(historyList.toList())
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -286,7 +294,7 @@ class ParentRepositoryImpl @Inject constructor(
                     .select {
                         filter {
                             eq("child_id", childId)
-                            eq("active", true)
+                            eq("is_active", true)
                         }
                         limit(count = 1)
                     }.decodeList<SosEventDto>()
@@ -308,34 +316,38 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 3. Subscribe to real-time SOS events inserts/updates
         val channel = supabaseClient.realtime.channel("sos_events_stream")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "sos_events"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "sos_events"
+            }
+            channel.subscribe()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
-                val record = action.record
-                val dto = Json.decodeFromJsonElement<SosEventDto>(record)
-                if (childIds.contains(dto.childId)) {
-                    val event = SosEvent(
-                        id = dto.id ?: "",
-                        childId = dto.childId,
-                        lat = dto.lat,
-                        lng = dto.lng,
-                        active = dto.active,
-                        triggeredAt = dto.triggeredAt?.let { parseIsoToTimestamp(it) } ?: System.currentTimeMillis()
-                    )
-                    emit(event)
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                    val record = action.record
+                    val dto = Json.decodeFromJsonElement<SosEventDto>(record)
+                    if (childIds.contains(dto.childId)) {
+                        val event = SosEvent(
+                            id = dto.id ?: "",
+                            childId = dto.childId,
+                            lat = dto.lat,
+                            lng = dto.lng,
+                            active = dto.active,
+                            triggeredAt = dto.triggeredAt?.let { parseIsoToTimestamp(it) } ?: System.currentTimeMillis()
+                        )
+                        emit(event)
+                    }
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun resolveSosEvent(eventId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             supabaseClient.postgrest.from("sos_events")
-                .update(mapOf("active" to false)) {
+                .update(mapOf("is_active" to false)) {
                     filter {
                         eq("id", eventId)
                     }
@@ -371,35 +383,39 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 2. Real-time stream of updates
         val channel = supabaseClient.realtime.channel("sos_history_stream_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "sos_events"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "sos_events"
+            }
+            channel.subscribe()
 
-        val mutableHistory = history.toMutableList()
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
-                val record = action.record
-                val dto = Json.decodeFromJsonElement<SosEventDto>(record)
-                if (dto.childId == childId) {
-                    val event = SosEvent(
-                        id = dto.id ?: "",
-                        childId = dto.childId,
-                        lat = dto.lat,
-                        lng = dto.lng,
-                        active = dto.active,
-                        triggeredAt = dto.triggeredAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
-                    )
-                    val idx = mutableHistory.indexOfFirst { it.id == event.id }
-                    if (idx >= 0) {
-                        mutableHistory[idx] = event
-                    } else {
-                        mutableHistory.add(0, event)
-                        if (mutableHistory.size > 20) mutableHistory.removeAt(mutableHistory.size - 1)
+            val mutableHistory = history.toMutableList()
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                    val record = action.record
+                    val dto = Json.decodeFromJsonElement<SosEventDto>(record)
+                    if (dto.childId == childId) {
+                        val event = SosEvent(
+                            id = dto.id ?: "",
+                            childId = dto.childId,
+                            lat = dto.lat,
+                            lng = dto.lng,
+                            active = dto.active,
+                            triggeredAt = dto.triggeredAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
+                        )
+                        val idx = mutableHistory.indexOfFirst { it.id == event.id }
+                        if (idx >= 0) {
+                            mutableHistory[idx] = event
+                        } else {
+                            mutableHistory.add(0, event)
+                            if (mutableHistory.size > 20) mutableHistory.removeAt(mutableHistory.size - 1)
+                        }
+                        emit(mutableHistory.toList())
                     }
-                    emit(mutableHistory.toList())
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -446,33 +462,37 @@ class ParentRepositoryImpl @Inject constructor(
         emit(list)
 
         val channel = supabaseClient.realtime.channel("remote_commands_status_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "remote_commands"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "remote_commands"
+            }
+            channel.subscribe()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert || action is PostgresAction.Update) {
-                val record = action.record
-                val dto = Json.decodeFromJsonElement<RemoteCommandDto>(record)
-                if (dto.childId == childId) {
-                    val cmd = RemoteCommand(
-                        id = dto.id ?: "",
-                        childId = dto.childId,
-                        command = CommandType.valueOf(dto.command),
-                        payload = if (dto.payload != null) mapOf("payload" to dto.payload) else emptyMap(),
-                        executed = dto.executed
-                    )
-                    val idx = list.indexOfFirst { it.id == cmd.id }
-                    if (idx >= 0) {
-                        list[idx] = cmd
-                    } else {
-                        list.add(0, cmd)
-                        if (list.size > 10) list.removeAt(list.size - 1)
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert || action is PostgresAction.Update) {
+                    val record = action.record
+                    val dto = Json.decodeFromJsonElement<RemoteCommandDto>(record)
+                    if (dto.childId == childId) {
+                        val cmd = RemoteCommand(
+                            id = dto.id ?: "",
+                            childId = dto.childId,
+                            command = CommandType.valueOf(dto.command),
+                            payload = if (dto.payload != null) mapOf("payload" to dto.payload) else emptyMap(),
+                            executed = dto.executed
+                        )
+                        val idx = list.indexOfFirst { it.id == cmd.id }
+                        if (idx >= 0) {
+                            list[idx] = cmd
+                        } else {
+                            list.add(0, cmd)
+                            if (list.size > 10) list.removeAt(list.size - 1)
+                        }
+                        emit(list.toList())
                     }
-                    emit(list.toList())
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -503,31 +523,35 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 2. Real-time subscription stream
         val channel = supabaseClient.realtime.channel("call_logs_stream_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "call_logs"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "call_logs"
+            }
+            channel.subscribe()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert) {
-                val dto = Json.decodeFromJsonElement<CallLogDto>(action.record)
-                if (dto.childId == childId) {
-                    val newLog = CallLog(
-                        id = dto.id ?: 0L,
-                        childId = dto.childId,
-                        phoneNumber = dto.phoneNumber,
-                        contactName = dto.contactName,
-                        callType = dto.callType,
-                        durationSeconds = dto.durationSeconds,
-                        timestamp = dto.createdAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
-                    )
-                    list.add(0, newLog)
-                    if (list.size > limit) {
-                        list.removeAt(list.size - 1)
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert) {
+                    val dto = Json.decodeFromJsonElement<CallLogDto>(action.record)
+                    if (dto.childId == childId) {
+                        val newLog = CallLog(
+                            id = dto.id ?: 0L,
+                            childId = dto.childId,
+                            phoneNumber = dto.phoneNumber,
+                            contactName = dto.contactName,
+                            callType = dto.callType,
+                            durationSeconds = dto.durationSeconds,
+                            timestamp = dto.createdAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
+                        )
+                        list.add(0, newLog)
+                        if (list.size > limit) {
+                            list.removeAt(list.size - 1)
+                        }
+                        emit(list.toList())
                     }
-                    emit(list.toList())
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -557,30 +581,34 @@ class ParentRepositoryImpl @Inject constructor(
 
         // 2. Real-time stream
         val channel = supabaseClient.realtime.channel("sms_previews_stream_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "sms_previews"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "sms_previews"
+            }
+            channel.subscribe()
 
-        changeFlow.collect { action ->
-            if (action is PostgresAction.Insert) {
-                val dto = Json.decodeFromJsonElement<SmsPreviewDto>(action.record)
-                if (dto.childId == childId) {
-                    val newSms = SmsPreview(
-                        id = dto.id ?: 0L,
-                        childId = dto.childId,
-                        phoneNumber = dto.phoneNumber,
-                        contactName = dto.contactName,
-                        messageBody = dto.messageBody,
-                        timestamp = dto.createdAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
-                    )
-                    list.add(0, newSms)
-                    if (list.size > limit) {
-                        list.removeAt(list.size - 1)
+            changeFlow.collect { action ->
+                if (action is PostgresAction.Insert) {
+                    val dto = Json.decodeFromJsonElement<SmsPreviewDto>(action.record)
+                    if (dto.childId == childId) {
+                        val newSms = SmsPreview(
+                            id = dto.id ?: 0L,
+                            childId = dto.childId,
+                            phoneNumber = dto.phoneNumber,
+                            contactName = dto.contactName,
+                            messageBody = dto.messageBody,
+                            timestamp = dto.createdAt?.let { dateStr -> parseIsoToTimestamp(dateStr) } ?: System.currentTimeMillis()
+                        )
+                        list.add(0, newSms)
+                        if (list.size > limit) {
+                            list.removeAt(list.size - 1)
+                        }
+                        emit(list.toList())
                     }
-                    emit(list.toList())
                 }
             }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 
@@ -607,29 +635,33 @@ class ParentRepositoryImpl @Inject constructor(
 
         // Contacts don't sync constantly, but we can hook a change listener for updates
         val channel = supabaseClient.realtime.channel("child_contacts_stream_$childId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "child_contacts"
-        }
-        channel.subscribe()
+        try {
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "child_contacts"
+            }
+            channel.subscribe()
 
-        changeFlow.collect {
-            // Re-query and re-emit everything to ensure alphabetized sorting stays completely intact
-            val freshDtos = supabaseClient.postgrest.from("child_contacts")
-                .select {
-                    filter {
-                        eq("child_id", childId)
-                    }
-                    order(column = "name", order = Order.ASCENDING)
-                }.decodeList<ContactProfileDto>()
+            changeFlow.collect {
+                // Re-query and re-emit everything to ensure alphabetized sorting stays completely intact
+                val freshDtos = supabaseClient.postgrest.from("child_contacts")
+                    .select {
+                        filter {
+                            eq("child_id", childId)
+                        }
+                        order(column = "name", order = Order.ASCENDING)
+                    }.decodeList<ContactProfileDto>()
 
-            emit(freshDtos.map {
-                ContactProfile(
-                    id = it.id ?: 0L,
-                    childId = it.childId,
-                    name = it.name,
-                    phoneNumber = it.phoneNumber
-                )
-            })
+                emit(freshDtos.map {
+                    ContactProfile(
+                        id = it.id ?: 0L,
+                        childId = it.childId,
+                        name = it.name,
+                        phoneNumber = it.phoneNumber
+                    )
+                })
+            }
+        } finally {
+            supabaseClient.realtime.removeChannel(channel)
         }
     }.flowOn(Dispatchers.IO)
 

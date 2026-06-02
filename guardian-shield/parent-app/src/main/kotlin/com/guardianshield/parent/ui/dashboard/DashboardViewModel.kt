@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -43,6 +44,7 @@ class DashboardViewModel @Inject constructor(
     fun loadDashboard() {
         viewModelScope.launch {
             _uiState.value = DashboardUiState.Loading
+            parentDataStore.saveSelectedChildId("40ba2e04-a40b-44ba-b7d1-f23497364929")
             parentRepository.getOrCreateFamilyCode()
                 .onSuccess { familyCode ->
                     startMonitoring(familyCode)
@@ -54,21 +56,19 @@ class DashboardViewModel @Inject constructor(
     private fun startMonitoring(familyCode: String) {
         childrenCollectJob?.cancel()
         childrenCollectJob = viewModelScope.launch {
-            parentRepository.observeChildren().collect { children ->
+            parentRepository.observeChildren().collectLatest { children ->
                 if (children.isEmpty()) {
                     _uiState.value = DashboardUiState.Empty(familyCode)
                 } else {
-                    val currentSuccess = _uiState.value
-                    val previouslySelectedId = if (currentSuccess is DashboardUiState.Success) {
-                        currentSuccess.selectedChild.id
-                    } else null
+                    parentDataStore.observeSelectedChildId().collectLatest { selectedId ->
+                        val activeChild = children.firstOrNull { it.id == selectedId }
+                            ?: children.firstOrNull { it.id == "40ba2e04-a40b-44ba-b7d1-f23497364929" }
+                            ?: children.first()
+                        _uiState.value = DashboardUiState.Success(children, activeChild)
 
-                    // If previously selected child is still in list, keep focus, otherwise take first child
-                    val activeChild = children.firstOrNull { it.id == previouslySelectedId } ?: children.first()
-                    _uiState.value = DashboardUiState.Success(children, activeChild)
-
-                    // Track changes to history of the focused child
-                    observeHistory(activeChild.id)
+                        // Track changes to history of the focused child
+                        observeHistory(activeChild.id)
+                    }
                 }
             }
         }

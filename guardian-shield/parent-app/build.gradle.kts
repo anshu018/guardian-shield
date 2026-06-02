@@ -93,9 +93,7 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
     implementation(libs.supabase.auth)
-    implementation(libs.ktor.android)
     implementation(libs.ktor.okhttp)
-    implementation(libs.ktor.cio)
 
     // WebRTC
     implementation(libs.webrtc)

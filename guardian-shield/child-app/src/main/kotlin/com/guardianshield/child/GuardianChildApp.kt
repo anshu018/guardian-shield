@@ -12,13 +12,20 @@ import androidx.work.WorkManager
 import com.guardianshield.child.services.ServiceWatchdogWorker
 import com.guardianshield.child.utils.Constants
 import dagger.hilt.android.HiltAndroidApp
-import java.util.concurrent.TimeUnit
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 
 @HiltAndroidApp
 class GuardianChildApp : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var supabaseClient: SupabaseClient
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -29,7 +36,23 @@ class GuardianChildApp : Application(), Configuration.Provider {
         super.onCreate()
         createNotificationChannels()
         scheduleWatchdog()
+
+        // Establish auth session for child device using anonymous login
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+            try {
+                val auth = supabaseClient.auth
+                if (auth.currentSessionOrNull() == null) {
+                    auth.signInAnonymously()
+                    android.util.Log.i("GuardianChildApp", "Supabase anonymous session established on startup")
+                } else {
+                    android.util.Log.i("GuardianChildApp", "Supabase anonymous session already active on startup")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("GuardianChildApp", "Failed to establish anonymous Supabase session: ${e.message}", e)
+            }
+        }
     }
+
 
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
